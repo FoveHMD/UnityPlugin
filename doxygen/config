@@ -1,0 +1,55 @@
+PROJECT_NAME           = "Fove Unity SDK"
+PROJECT_LOGO           = ./FoveLogo.png
+OUTPUT_DIRECTORY       = .
+ABBREVIATE_BRIEF       = "The $name class" \
+                         "The $name widget" \
+                         "The $name file" \
+                         is \
+                         provides \
+                         specifies \
+                         contains \
+                         represents \
+                         a \
+                         an \
+                         the
+FULL_PATH_NAMES        = NO
+INHERIT_DOCS           = NO
+OPTIMIZE_OUTPUT_JAVA   = YES
+EXTRACT_ALL            = YES
+EXTRACT_LOCAL_CLASSES  = NO
+HIDE_IN_BODY_DOCS      = YES
+INLINE_INFO            = NO
+SORT_BRIEF_DOCS        = YES
+SORT_MEMBERS_CTORS_1ST = YES
+SORT_GROUP_NAMES       = YES
+SORT_BY_SCOPE_NAME     = YES
+GENERATE_TODOLIST      = NO
+GENERATE_TESTLIST      = NO
+GENERATE_BUGLIST       = NO
+GENERATE_DEPRECATEDLIST= NO
+SHOW_USED_FILES        = NO
+SHOW_FILES             = NO
+INPUT                  = ../FoveUnityPlugin/src/Behaviours
+FILE_PATTERNS          = *.cs
+RECURSIVE              = YES
+EXCLUDE_SYMLINKS       = YES
+EXCLUDE_SYMBOLS        = MonoBehaviour \
+                         FoveEyeCamera
+EXAMPLE_PATTERNS       =
+STRIP_CODE_COMMENTS    = NO
+REFERENCES_LINK_SOURCE = NO
+VERBATIM_HEADERS       = NO
+GENERATE_LATEX         = NO
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+SEARCH_INCLUDES        = NO
+PREDEFINED             = protected=private
+SKIP_FUNCTION_MACROS   = NO
+EXTERNAL_GROUPS        = NO
+EXTERNAL_PAGES         = NO
+CLASS_DIAGRAMS         = NO
+HIDE_UNDOC_RELATIONS   = NO
+HAVE_DOT               = YES
+COLLABORATION_GRAPH    = NO
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
