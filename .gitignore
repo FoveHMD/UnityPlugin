@@ -1,2 +1,9 @@
 *.md.meta
+*.sln
+*.csproj
+.vs/
 doxygen.meta
+Library/
+Temp/
+Packages/
+Build/

@@ -1,0 +1,42 @@
+stages:
+    - Build
+    - Package
+
+variables:
+    VERBOSE: "1"
+    MSBUILDDISABLENODEREUSE: "1"
+    
+Build (Windows):
+    stage: Build
+    tags:
+        - unity
+        - windows
+    script:
+        - echo %cd%
+        # correct syntax appears to be either:
+        # double backslash in double quotes, or single backslash without quotes
+        - set path=%path%;"C:\\Program Files\\Unity\\Editor"
+        - echo %path%
+        - mkdir Build
+        - start /wait Unity.exe -quit -batchmode -serial %UNITY_CI_SERIAL% -username %UNITY_CI_USERNAME% -password %UNITY_CI_PASSWORD% -projectPath "%cd%" -buildWindows64Player "Build/PluginBuildTest.exe"
+    artifacts:
+        paths:
+            - Build/*
+        
+        
+Package (Windows):
+    stage: Package
+    tags:
+        - unity
+        - windows
+    script:
+        - echo %cd%
+        # correct syntax appears to be either:
+        # double backslash in double quotes, or single backslash without quotes
+        - set path=%path%;"C:\\Program Files\\Unity\\Editor"
+        - echo %path%
+        - mkdir Packages
+        - start /wait Unity.exe -quit -batchmode -serial %UNITY_CI_SERIAL% -username %UNITY_CI_USERNAME% -password %UNITY_CI_PASSWORD% -projectPath "%cd%" -exportPackage "Assets/FoveUnityPlugin" "Packages/Fove_Unity_Plugin.unitypackage"
+    artifacts:
+        paths:
+            - Packages/Fove_Unity_Plugin.unitypackage

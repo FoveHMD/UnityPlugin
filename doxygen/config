@@ -29,12 +29,11 @@ GENERATE_BUGLIST       = NO
 GENERATE_DEPRECATEDLIST= NO
 SHOW_USED_FILES        = NO
 SHOW_FILES             = NO
-INPUT                  = ../FoveUnityPlugin/src/Behaviours
+INPUT                  = ../Assets/FoveUnityPlugin/Source/Behaviours
 FILE_PATTERNS          = *.cs
 RECURSIVE              = YES
 EXCLUDE_SYMLINKS       = YES
-EXCLUDE_SYMBOLS        = MonoBehaviour \
-                         FoveEyeCamera
+EXCLUDE_SYMBOLS        = MonoBehaviour
 EXAMPLE_PATTERNS       =
 STRIP_CODE_COMMENTS    = NO
 REFERENCES_LINK_SOURCE = NO
