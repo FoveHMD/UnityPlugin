@@ -16,6 +16,8 @@ public class FoveInterfaceEditor : Editor
 	SerializedProperty _cullMaskLeft;
 	SerializedProperty _cullMaskRight;
 
+	SerializedProperty _gazeCastPolicy;
+
 	// Compositor properties
 	//SerializedProperty _compositorLayerType;
 	SerializedProperty _compositorDisableTimewarp;
@@ -25,6 +27,9 @@ public class FoveInterfaceEditor : Editor
 	private static bool _showCompositorAttribs;
 
 	protected GUIStyle helpStyle;
+	private GUIContent fetchPositionLabel = new GUIContent("- position");
+	private GUIContent fetchGazeLabel = new GUIContent("- gaze");
+	private GUIContent fetchOrientationLabel = new GUIContent("- orientation");
 
 	protected void CheckForNull(System.Object obj, string name)
 	{
@@ -39,11 +44,11 @@ public class FoveInterfaceEditor : Editor
 
 	protected virtual void EnableProperties()
 	{
-		_gaze = serializedObject.FindProperty("gaze");
+		_gaze = serializedObject.FindProperty("fetchGaze");
 		CheckForNull(_gaze, "_gaze");
-		_orientation = serializedObject.FindProperty("orientation");
+		_orientation = serializedObject.FindProperty("fetchOrientation");
 		CheckForNull(_orientation, "_orientation");
-		_position = serializedObject.FindProperty("position");
+		_position = serializedObject.FindProperty("fetchPosition");
 		CheckForNull(_position, "_position");
 		
 		_eyeTargets = serializedObject.FindProperty("eyeTargets");
@@ -55,7 +60,10 @@ public class FoveInterfaceEditor : Editor
 		CheckForNull(_cullMaskLeft, "_cullMaskLeft");
 		_cullMaskRight = serializedObject.FindProperty("cullMaskRight");
 		CheckForNull(_cullMaskRight, "_cullMaskRight");
-		
+
+		_gazeCastPolicy = serializedObject.FindProperty("gazeCastPolicy");
+		CheckForNull(_gazeCastPolicy, "gazeCastPolicy");
+
 		//_compositorLayerType = serializedObject.FindProperty("layerType");
 		//CheckForNull(_compositorLayerType, "_compositorLayerType");
 		_compositorDisableTimewarp = serializedObject.FindProperty("disableTimewarp");
@@ -84,19 +92,20 @@ public class FoveInterfaceEditor : Editor
 		bool isPlaying = EditorApplication.isPlaying;
 
 		EditorGUILayout.Space();
-		EditorGUILayout.LabelField("Client uses...", EditorStyles.boldLabel);
+		EditorGUILayout.LabelField("Client fetches and sync:", EditorStyles.boldLabel);
 		EditorGUI.BeginChangeCheck();
 		{
 			EditorGUI.indentLevel++;
-			EditorGUILayout.PropertyField(_gaze);
-			EditorGUILayout.PropertyField(_orientation);
-			EditorGUILayout.PropertyField(_position);
+			EditorGUILayout.PropertyField(_gaze, fetchGazeLabel);
+			EditorGUILayout.PropertyField(_orientation, fetchOrientationLabel);
+			EditorGUILayout.PropertyField(_position, fetchPositionLabel);
 			EditorGUI.indentLevel--;
 		}
 
 		EditorGUILayout.Space();
 		EditorGUILayout.PropertyField(_eyeTargets);
 		EditorGUILayout.PropertyField(_poseType);
+		EditorGUILayout.PropertyField(_gazeCastPolicy);
 
 		GUI.enabled = true;
 		_showCullingMasks = EditorGUILayout.Foldout(_showCullingMasks, "Per-Eye Culling Masks");

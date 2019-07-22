@@ -1,8 +1,8 @@
 ﻿Shader "Fove/EyeShader"
 {
 	Properties {
-		_Tex1 ("Base (RGB) Trans (A)", 2D) = "white" {}
-		_Tex2 ("Base (RGB) Trans (A)", 2D) = "white" {}
+		_TexLeft ("Base (RGB) Trans (A)", 2D) = "white" {}
+		_TexRight ("Base (RGB) Trans (A)", 2D) = "white" {}
 	}
 
 	SubShader {
@@ -23,16 +23,15 @@
 					half2 texcoord : TEXCOORD0;
 				};
 
-				sampler2D _Tex1;
-				float4 _Tex1_ST;
-				sampler2D _Tex2;
-				float4 _Tex2_ST;
+				sampler2D _TexLeft;
+				sampler2D _TexRight;
+				float4 _TexLeft_ST;
 
 				v2f vert (appdata_t v)
 				{
 					v2f o;
 					o.vertex = UnityObjectToClipPos(v.vertex);
-					o.texcoord = TRANSFORM_TEX(v.texcoord, _Tex1);
+					o.texcoord = TRANSFORM_TEX(v.texcoord, _TexLeft);
 					return o;
 				}
 				
@@ -41,9 +40,9 @@
 					float mask = round(i.texcoord.x);
 
 					i.texcoord.x *= 2;
-					float4 colorLeft = tex2D(_Tex2, i.texcoord);
+					float4 colorLeft = tex2D(_TexLeft, i.texcoord);
 					i.texcoord.x -= 1;
-					float4 colorRight = tex2D(_Tex1, i.texcoord);
+					float4 colorRight = tex2D(_TexRight, i.texcoord);
 
 					return lerp(colorLeft, colorRight, mask);
 				}

@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace Fove.Unity
 {
-
 	public static class FoveResearch
 	{
 		private static Texture2D m_sEyesTexture;
@@ -14,6 +13,8 @@ namespace Fove.Unity
 
 		private static HeadsetResearch m_sResearch;
 
+		private static ResearchGaze m_sResearchGaze;
+
 		public static Texture2D EyesTexture
 		{
 			get
@@ -22,6 +23,7 @@ namespace Fove.Unity
 				return m_sEyesTexture;
 			}
 		}
+
 		public static Texture2D PositionTexture
 		{
 			get
@@ -29,6 +31,18 @@ namespace Fove.Unity
 				EnsureInitialization();
 				return m_sPositionTexture;
 			}
+		}
+
+		public static ResearchGaze GetResearchGaze(bool immediate = false)
+		{
+			EnsureInitialization();
+
+			if (immediate)
+				return m_sResearchGaze;
+
+			ResearchGaze gaze;
+			m_sResearch.GetGaze(out gaze);
+			return gaze;
 		}
 
 		private static void AcceptAddIn(Headset headset)
@@ -41,7 +55,7 @@ namespace Fove.Unity
 			if (m_sResearch != null)
 				return;
 
-			FoveManager.RegisterAddIn(AcceptAddIn);
+			AcceptAddIn(FoveManager.Headset);
 			FoveManager.AddInUpdate += UpdateImages;
 			m_sEyesTexture = null;
 			m_sPositionTexture = null;
@@ -96,6 +110,7 @@ namespace Fove.Unity
 
 		private static void UpdateImages()
 		{
+			m_sResearchGaze = GetResearchGaze(true);
 			TryUpdatingTexture(GetEyesImage, ref m_sEyesImage, ref m_sEyesTexture);
 			TryUpdatingTexture(GetPositionImage, ref m_sPositionImage, ref m_sPositionTexture);
 		}

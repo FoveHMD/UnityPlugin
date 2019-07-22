@@ -1,10 +1,45 @@
 # FOVE Unity Plugin Changelog
 
+## 3.1.0
+
+* Rename `Fove::Ray` into `Fove::EyeRay`
+* Rename `Fove::Quaternion` into `Fove::Quat`
+* FoveUnityUtils: use extension functions for type conversion instead of static functions
+* Move internal fields and methods of FoveInterface and FoveManager in a separate '.internal' files for readability
+* Move Data type structures outside of the FoveManager and FoveInterface classes to increase readability of the public APIs
+* Made FoveInterface's fetchGaze, fetchOrientation, fetchPosition, eyeTargets, poseType, cullLeftMask and cullRightMask public so that they can be queried or changed at runtime
+* Fix a memory and processing leak happening every time the game was restarted inside Unity
+* Allow to disabled and enable FoveInterface at runtime
+* Fix the order of the eyes on the desktop view (right and left were swapped)
+* Add an option inside the FoveSettings to allow a custom view on the Desktop (different from the HMD)
+* Fix issue with scene loading and unloading (HMD screen was turning black or going back to default space skybox)
+* Fix random HMD freezing issue happening when Unity was changing the rasterizing state
+* Fix the rotation of the `xx BASE` object generated when `FoveInterface` has no parent in the scene. The rotation of the Fove interface was lost in this case.
+* Add the `GetResearchGaze` function to the `ResearchFove` get the research gaze with eye radius information
+* Rename and move enumeration `FovePoseToUse` into `FoveInterface::PlayerPose`
+* Unify FoveManager and FoveInterface get APIs:
+    * Merge synched and out-of-sync query functions by adding an optional `immediate` parameter. Got rid of `_Immediate` functions
+    * Rename functions returning HMD coordinate space values `GetHMDxx` instead of using sometimes the term `HMD` and sometimes `Local`
+* FoveInterface:
+    * Make `PositionToEye` function private as it was never intended to be public (and not really usable as a public function anyway)
+    * Make `RenderEye` function internal as users should not directly call this function (it is still accessible though)
+    * Remove obsolete and bugged function `CreateGazeRaysFromScreenPoints` 
+    * Remove obsolete function `Make2DFromVector`. This function was using internal types
+    * Add `GazeCastPolicy` field to add more control on how to dismiss gaze cast collisions when the user closes his eyes
+* FoveManager:
+    * Remove the `GetFVRHeadset` function. Please use the already existing `Headset` property instead
+    * Add the `ConnectCompositor` and `DisconnectCompositor` functions
+    * Fixed `CheckEyesClosed` function that was always returning out-of-sync values
+    * Add immediate version for `IsGazeFixated` and `GetPupilDilatation` functions
+    * Add the `GetHMDPose` function
+    * Fix the headset data values returned before the connection to the HMD is established
+    * Move FoveManager instance to the `DontDestroyOnLoad` scene to avoid screen freezing issues sometime happening during scene loadings
+
 ## 3.0.0
 
 * Removed log in case of null gaze vectors (killing the framerate).
 * Changed the way Matrix44 is marshalled to remove array allocation at each frame.
-* Blit eye rendered texture on main screen instead of re-rendering the sceen a third time.
+* Blit eye rendered texture on main screen instead of re-rendering the screen a third time.
 * Fixed graphics-driver crashes by implementing a native-level helper library with fancy callbacks for code that needs to run on the Unity graphics thread.
 * Created a FoveManager class which gets automatically added to the scene and lives through scene changes. This is in-part to separate the headset-relative and worldspace-relative interfaces better, but it also helps to keep the native plugin objects alive (see next bullet point).
 * Fixed a bug where changing scenes would often result in temporary loss of eye tracking and position tracking and then make you sick by jerking you around as position tracking came back on.

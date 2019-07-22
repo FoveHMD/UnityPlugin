@@ -1,56 +1,83 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 using UnityEngine;
 
-using UnityRay = UnityEngine.Ray;
-using UnityQuaternion = UnityEngine.Quaternion;
-
 namespace Fove.Unity
 {
-	[Serializable]
-	public enum FovePoseToUse
-	{
-		Sitting,
-		Standing,
-	}
-
 	[RequireComponent(typeof(Camera))]
-	public class FoveInterface : MonoBehaviour
+	public partial class FoveInterface : MonoBehaviour
 	{
-		/**
+		[Serializable]
+		public enum PlayerPose
+		{
+			Sitting,
+			Standing,
+		}
+
+		[Serializable]
+		public enum GazeCastPolicy
+		{
+			DismissWhenBothEyesClosed,
+			DismissWhenOneEyeClosed,
+			NeverDismiss,
+		}
+
+		/*
 		 * MonoBehaviour Implementation
 		 * 
 		 * The pieces required and used by the MonoBehaviour subclass when attached to a GameObject in the
 		 * scene. This behaviour does not function unless there is a single instance of this class
 		 * instantiated in the scene.
 		 */
+
+		/// <summary>
+		/// When true, fetch the gaze information from the fove HMD
+		/// </summary>
 		[Tooltip("Turns off gaze tracking")]
-		[SerializeField] protected bool gaze = true;
+		[SerializeField] public bool fetchGaze = true;
+
+		/// <summary>
+		/// When true, fetch the HMD orientation and push it to the game object transform
+		/// </summary>
 		[Tooltip("Turns off orientation tracking")]
-		[SerializeField] protected bool orientation = true;
+		[SerializeField] public bool fetchOrientation = true;
 
+		/// <summary>
+		/// When true, fetch the HMD position and push it to the game object transform
+		/// </summary>
 		[Tooltip("Turns off position tracking (turns on position tracking when on)")]
-		[SerializeField] protected bool position = true;
+		[SerializeField] public bool fetchPosition = true;
 
+		/// <summary>
+		/// Specify which eye this interface should render to.
+		/// </summary>
 		[Tooltip("Which eye(s) to render to.\n\nSelecting 'Left' or 'Right' will cause this camera to ONLY render to that eye. 'Both' is default. 'Neither' will prevent this camera from rendering to the HMD.\n\nNOTE: 'Neither' will not prevent the normal camera view from displaying.")]
-		[SerializeField] private Eye eyeTargets = Eye.Both;
+		[SerializeField] public Eye eyeTargets = Eye.Both;
+
+		/// <summary>
+		/// Specify the current user pose (Standing or Siting)
+		/// </summary>
 		[Tooltip("How to interpret the HMD position:\n\nSitting: (Old default) The HMD is positioned relative to the tracking camera.\n\nStanding: An (system-configurable) offset is added to the 'Sitting' position. This option is more compatible with systems like SteamVR.")]
-		[SerializeField] private FovePoseToUse poseType = FovePoseToUse.Standing;
-
-		// Compositor options
-		[Tooltip(
-			"Check this to disable time warp on images rendered and sent to the compositor. This is useful if you disable orientation to avoid any jitter due to frame latency.")]
-		[SerializeField] protected bool disableTimewarp = false;
-		[SerializeField] protected bool disableFading = false;
-		[SerializeField] protected bool disableDistortion = false;
-		/*[SerializeField] */protected CompositorLayerType layerType = CompositorLayerType.Base; // enforce the use of the base layer for the moment
-
+		[SerializeField] public PlayerPose poseType = PlayerPose.Standing;
+		
+		/// <summary>
+		/// Unity layers to cull when rendering the left eye.
+		/// </summary>
 		[Tooltip("Don't draw any of the selected layers to the left eye.")]
-		[SerializeField] private LayerMask cullMaskLeft;
+		[SerializeField] public LayerMask cullMaskLeft;
+
+		/// <summary>
+		/// Unity layers to cull when rendering the right eye.
+		/// </summary>
 		[Tooltip("Don't draw any of the selected layers to the right eye.")]
-		[SerializeField] private LayerMask cullMaskRight;
+		[SerializeField] public LayerMask cullMaskRight;
+
+		/// <summary>
+		/// Specify how gaze cast collision should be dismissed based on the user closed eye state. 
+		/// </summary>
+		[Tooltip("Specify how gaze cast collisions should be dismissed when the user closed his eyes")]
+		[SerializeField] public GazeCastPolicy gazeCastPolicy;
 
 		public bool TimewarpDisabled { get { return disableTimewarp; } }
 		public bool FadingDisabled { get { return disableFading; } }
@@ -58,309 +85,8 @@ namespace Fove.Unity
 		public CompositorLayerType LayerType { get { return layerType; } }
 
 		public Camera Camera { get { return _cam; } }
-		protected Camera _cam;
-
-		private struct StereoEyeData
-		{
-			public Matrix4x4 projection;
-			public Vector3 position;
-		}
-		private StereoEyeData[] _stereoData = new StereoEyeData[2];
-
-		private struct PoseData
-		{
-			public Vector3 position;
-			public UnityQuaternion orientation;
-		}
-		private PoseData _poseData = new PoseData();
-
-
-		private GazeConvergenceData _eyeConverge = new GazeConvergenceData(new UnityRay(Vector3.zero, Vector3.forward), 7f);
-		protected UnityRay _eyeRayLeft = new UnityRay(Vector3.zero, Vector3.forward);
-		protected UnityRay _eyeRayRight = new UnityRay(Vector3.zero, Vector3.forward);
-
-		protected float _usedIOD;
-		public float UsedIOD { get { return _usedIOD; } }
-
-		// Private callbacks and support for HMD events
-		private void RegisterEventCallbacks()
-		{
-			var createInfo = new CompositorLayerCreateInfo
-			{
-				alphaMode = AlphaMode.Auto,
-				disableDistortion = disableDistortion,
-				disableFading = disableFading,
-				disableTimewarp = disableTimewarp,
-				type = layerType
-			};
-			FoveManager.RegisterInterface(createInfo, this);
-			FoveManager.PoseUpdate.AddListener(UpdatePoseData);
-			FoveManager.EyeProjectionUpdate.AddListener(UpdateGazeMatrices);
-			FoveManager.EyePositionUpdate.AddListener(UpdateEyePosition);
-			FoveManager.GazeUpdate.AddListener(UpdateGaze);
-		}
-
-		private void UnregisterCallbacks()
-		{
-			FoveManager.UnregisterInterface(this);
-			FoveManager.PoseUpdate.RemoveListener(UpdatePoseData);
-			FoveManager.EyeProjectionUpdate.RemoveListener(UpdateGazeMatrices);
-			FoveManager.EyePositionUpdate.RemoveListener(UpdateEyePosition);
-			FoveManager.GazeUpdate.RemoveListener(UpdateGaze);
-		}
-
-		private void UpdatePoseData(Vector3 position, Vector3 standingPosition, UnityQuaternion orientation)
-		{
-			if (this.orientation)
-				_poseData.orientation = orientation;
-			if (this.position) {
-				switch (poseType)
-				{
-					case FovePoseToUse.Standing:
-						_poseData.position = standingPosition;
-						break;
-					case FovePoseToUse.Sitting:
-						_poseData.position = position;
-						break;
-				}
-			}
-
-			transform.localPosition = _poseData.position;
-			transform.localRotation = _poseData.orientation;
-		}
-
-		private void UpdateGazeMatrices()
-		{
-			FoveManager.GetProjectionMatrices(_cam.nearClipPlane, _cam.farClipPlane, ref _stereoData[0].projection, ref _stereoData[1].projection);
-		}
-
-		private void UpdateEyePosition(Vector3 left, Vector3 right)
-		{
-			_stereoData[0].position = left;
-			_stereoData[1].position = right;
-		}
-
-		private void UpdateGaze(GazeConvergenceData conv, Vector3 vecLeft, Vector3 vecRight)
-		{
-			if (gaze) {
-				_eyeConverge.distance = conv.distance;
-				_eyeConverge.ray = TransformLocalRay(conv.ray);
-				_eyeConverge.ray.direction.Normalize();
-			}
-			else
-			{
-				var r = new UnityRay(Vector3.zero, Vector3.forward);
-				_eyeConverge.ray = TransformLocalRay(r);
-			}
-
-			CalculateGazeRays(out _eyeRayLeft, out _eyeRayRight, vecLeft, vecRight);
-		}
-
-		private UnityRay TransformLocalRay(UnityRay ray)
-		{
-			var result = new UnityRay(transform.TransformPoint(ray.origin), transform.TransformDirection(ray.direction).normalized);
-			return result;
-		}
-
-		/// <summary>
-		/// Position this interface to one eye or the other. If a value other than left/right is sent
-		/// in it resets the position to zero for you. This is here for internal use, but it's public
-		/// because you may come up with a reason to need this.
-		/// </summary>
-		/// <param name="which">The eye you'd like the interface's position to match</param>
-		public void PositionToEye(Eye which)
-		{
-			var targetPosition = Vector3.zero;
-			if (which == Eye.Left || which == Eye.Right)
-			{
-				var eyeData = _stereoData[(int)which - 1];
-				targetPosition = _poseData.position + _poseData.orientation * eyeData.position;
-			}
-
-			transform.localPosition = targetPosition;
-			transform.localRotation = _poseData.orientation;
-
-			//var actual = transform.position;
-			//var delta = Vector3.right * 0.01f;
-			//Debug.DrawLine(actual - delta, actual + delta, Color.black);
-		}
-
-		protected bool ShouldRenderEye(Eye which)
-		{
-			if (which == Eye.Neither || which == Eye.Both)
-				return false;
-
-			if (((int)eyeTargets & (int)which) == 0)
-				return false;
-
-			return true;
-		}
-
-		/// <summary>
-		/// Render the specified eye onto the texture provided. This is used internally and likely
-		/// won't be needed for the vast majority of applications. If you use Neither or Both, it
-		/// returns immediately.
-		/// </summary>
-		/// <param name="which">The eye you want to render to the provided texture</param>
-		/// <param name="rt">The target texture to use for rendering the specified eye.</param>
-		public virtual void RenderEye(Eye which, RenderTexture rt)
-		{
-			if (!ShouldRenderEye(which))
-				return;
-
-			var eyeData = _stereoData[(int)which - 1];
-
-			var origCullMask = _cam.cullingMask;
-			var eyeCullMask = which == Eye.Left ? cullMaskLeft : cullMaskRight;
-			_cam.cullingMask = origCullMask & ~eyeCullMask;
-
-			PositionToEye(which);
-
-			_cam.projectionMatrix = eyeData.projection;
-			_cam.targetTexture = rt;
-
-			_cam.Render();
-
-			_cam.cullingMask = origCullMask;
-			_cam.targetTexture = null;
-			_cam.ResetProjectionMatrix();
-			transform.localPosition = _poseData.position;
-			transform.localRotation = _poseData.orientation;
-		}
-
-		/****************************************************************************************************\
-		 * GameObject lifecycle methods
-		\****************************************************************************************************/
-		private void Awake()
-		{
-			if (transform.parent == null)
-			{
-				var parent = new GameObject(name + " BASE");
-				parent.transform.position = transform.position;
-
-				transform.parent = parent.transform;
-				transform.localPosition = Vector3.zero;
-			}
-			_cam = GetComponent<Camera>();
-			_cam.enabled = false;
-		}
-
-		private void Start()
-		{
-			RegisterEventCallbacks();
-		}
-
-		protected void OnApplicationQuit()
-		{
-			UnregisterCallbacks();
-		}
-
-		private void OnDestroy()
-		{
-			UnregisterCallbacks();
-		}
-
-		/****************************************************************************************************\
-		 * Interface Methods
-		\****************************************************************************************************/
-		public void CreateGazeRaysFromScreenPoints(Vector2 lScreenPt, Vector2 rScreenPt, out UnityRay leftRay, out UnityRay rightRay)
-		{
-			var origin = transform.position;
-			var lPosition = origin + _stereoData[0].position;
-			var rPosition = origin + _stereoData[1].position;
-
-			Vector3 lDirection, rDirection;
-			lDirection = _stereoData[0].projection.inverse.MultiplyPoint(lScreenPt);
-			rDirection = _stereoData[1].projection.inverse.MultiplyPoint(rScreenPt);
-
-			leftRay = new UnityRay(lPosition, transform.TransformDirection(lDirection * -1));
-			rightRay = new UnityRay(rPosition, transform.TransformDirection(rDirection * -1));
-		}
-
-		public void Make2DFromVector(GazeVector inL, GazeVector inR, out Vector2 outL, out Vector2 outR)
-		{
-			var lv = Utils.GetUnityVector(inL.vector);
-			var rv = Utils.GetUnityVector(inR.vector);
-			
-			outL = _stereoData[0].projection.MultiplyPoint(lv);
-			outR = _stereoData[1].projection.MultiplyPoint(rv);
-		}
-
-		/// <summary>
-		/// Calculate Unity Ray objects based on the origin points of the user's eyes in 3D and the calculated
-		/// gaze direction.
-		/// </summary>
-		/// <param name="leftRay"></param>
-		/// <param name="rightRay"></param>
-		/// <param name="immediate"></param>
-		/// <remarks>Gaze can either be enabled or disabled, and different FoveInterface subclasses could have
-		/// different ways that are better for getting origin positions, so we call into abstract methods
-		/// for those and let the implementations themselves provide the correct position.</remarks>
-		protected void CalculateGazeRays(out UnityRay leftRay, out UnityRay rightRay, Vector3 vecLeft, Vector3 vecRight)
-		{
-			var origin = transform.position;
-			var lPosition = origin + _poseData.orientation * _stereoData[0].position;
-			var rPosition = origin + _poseData.orientation * _stereoData[1].position;
-
-			var usedVecLeft = gaze ? vecLeft : Vector3.forward;
-			var usedVecRight = gaze ? vecRight : Vector3.forward;
-
-			leftRay = new UnityRay(lPosition, transform.TransformDirection(usedVecLeft.normalized));
-			rightRay = new UnityRay(rPosition, transform.TransformDirection(usedVecRight.normalized));
-		}
 
 		#region Gazecasting
-		private bool CanSee()
-		{
-			return FoveManager.CheckEyesClosed() != Eye.Both;
-		}
-
-		private bool InternalGazecastHelperSingle(Collider col, out RaycastHit hit, float maxDistance)
-		{
-			bool eyesInsideCollider = (col.bounds.Contains(_eyeConverge.ray.origin));
-
-			if (eyesInsideCollider || !CanSee())
-			{
-				hit = new RaycastHit();
-				return false;
-			}
-			
-			if (col.Raycast(_eyeConverge.ray, out hit, maxDistance))
-				return true;
-
-			return false;
-		}
-
-		private bool InternalGazecastHelper(out RaycastHit hit, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggers)
-		{
-			if (!CanSee())
-			{
-				hit = new RaycastHit();
-				return false;
-			}
-			Debug.DrawRay(_eyeConverge.ray.origin, _eyeConverge.ray.direction, Color.blue, 2.0f);
-			return Physics.Raycast(_eyeConverge.ray, out hit, maxDistance, layerMask, queryTriggers);
-		}
-
-		private RaycastHit[] InternalGazecastHelper_All(float maxDistance, int layerMask, QueryTriggerInteraction queryTriggers)
-		{
-			if (!CanSee())
-			{
-				return null;
-			}
-
-			return Physics.RaycastAll(_eyeConverge.ray, maxDistance, layerMask, queryTriggers);
-		}
-
-		private int InternalGazecastHelper_NonAlloc(RaycastHit[] results, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggers)
-		{
-			if (!CanSee())
-			{
-				return 0;
-			}
-
-			return Physics.RaycastNonAlloc(_eyeConverge.ray, results, maxDistance, layerMask, queryTriggers);
-		}
 
 		/// <summary>
 		/// Check the user's gaze for collision with objects in the scene.
@@ -511,50 +237,41 @@ namespace Fove.Unity
 		#endregion
 
 		/// <summary>
-		/// Get a structure containing Unity Ray objects which describe where in the scene each of the user's eyes are
-		/// looking.</summary>
-		/// <returns>The set of Unity Ray objects describing the user's eye gaze.</returns>
-		/// <remarks>These rays are overwritten each frame, so you should not retain references to them across frames.
-		/// </remarks>
-		public EyeRays GetGazeRays()
+		/// Get eye rays describing where in the scene each of the user's eyes are looking.
+		/// By default, it returns the value of the current frame.
+		/// Set <paramref name="immediate"/> to <c>true</c> to re-query the latest value to the HMD.
+		/// </summary>
+		/// <returns>Eye rays describing the user's gaze in world space.</returns>
+		public EyeRays GetGazeRays(bool immediate=false)
 		{
-			return new EyeRays(_eyeRayLeft, _eyeRayRight);
-		}
+			if(!immediate)
+				return new EyeRays(_eyeRayLeft, _eyeRayRight);
 
-		/// <summary>
-		/// Get a set of Unity Ray objects which describe where in the scene each of the user's eyes are looking right
-		/// now.</summary>
-		/// <returns>The set of Unity Ray objects describing the user's eye gaze.</returns>
-		/// <remarks>Typically gaze data is cached at the start of each frame to yield consistent results for each
-		/// frame. This function ignores the cached value and creates a new struct every time, so be careful.</remarks>
-		public EyeRays GetGazeRays_Immediate()
-		{
-			UnityRay left, right;
-			CalculateGazeRays(out left, out right, FoveManager.GetLeftEyeVector_Immediate(), FoveManager.GetRightEyeVector_Immediate());
+			var leftEyeVector = fetchGaze? FoveManager.GetLeftEyeVector(true): Vector3.forward;
+			var rightEyeVector = fetchGaze? FoveManager.GetRightEyeVector(true): Vector3.forward;
+			var leftEyeOffset = FoveManager.GetLeftEyeOffset(true);
+			var rightEyeOffset = FoveManager.GetRightEyeVector(true);
+
+			Ray left, right;
+			CalculateGazeRays(ref leftEyeOffset, ref rightEyeOffset, ref leftEyeVector, ref rightEyeVector, out left, out right);
 
 			return new EyeRays(left, right);
 		}
 
 		/// <summary>
-		/// Returns the data that describes the convergence point of the eyes this frame. See the description of the
-		/// `GazeConvergenceData` for more detail on how to use this information.
+		/// Returns the current convergence point of the eyes. See the description of the
+		/// <see cref="GazeConvergenceData"/> for more detail on how to use this information.
+		/// By default, it returns the value of the current frame.
+		/// Set <paramref name="immediate"/> to <c>true</c> to re-query the latest value to the HMD.
 		/// </summary>
-		/// <returns>A struct describing the gaze convergence in HMD-relative space.</returns>
-		public GazeConvergenceData GetGazeConvergence_Immediate()
+		/// <returns>The gaze convergence in world space.</returns>
+		public GazeConvergenceData GetGazeConvergence(bool immediate = false)
 		{
-			GazeConvergenceData localConvergence = FoveManager.GetLocalGazeConvergence_Immediate();
-			var localRay = localConvergence.ray;
-			return new GazeConvergenceData(TransformLocalRay(localRay), localConvergence.distance);
-		}
+			if(!immediate)
+				return _eyeConverge;
 
-		/// <summary>
-		/// Returns the data that describes the convergence point of the eyes this frame. See the description of the
-		/// `GazeConvergenceData` for more detail on how to use this information.
-		/// </summary>
-		/// <returns>A struct describing the gaze convergence in world space.</returns>
-		public GazeConvergenceData GetGazeConvergence()
-		{
-			return _eyeConverge;
+			var localGaze = FoveManager.GetHMDGazeConvergence(true);
+			return GetWorldSpaceConvergence(ref localGaze.ray, localGaze.distance);
 		}
 	}
 }

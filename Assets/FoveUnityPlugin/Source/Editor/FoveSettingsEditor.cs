@@ -233,6 +233,10 @@ namespace Fove.Unity
 				"Force eye tracking to recalibrate every time the game is launched (including pressing the \"Play\" button in the editor.\n\nRecommended: Leave this off except for builds where users will be changing frequently, e.g., public demos/exhibitions.",
 				() => { serialized.FindProperty("forceCalibration").boolValue = EditorGUILayout.Toggle("Force Calibration", FoveSettings.ShouldForceCalibration, GUILayout.ExpandWidth(false)); });
 			DrawElementRow(
+				"customDesktopView",
+				"Allow to have the destkop main display view to be different from the HMD. When enabled, any enabled camera renders to the desktop view while any enabled Fove Interface renderers to the HMD. Having a different view for desktop display requires to perform extra rendering and is slower.",
+				() => { serialized.FindProperty("customDesktopView").boolValue = EditorGUILayout.Toggle("Custom Desktop View", FoveSettings.CustomDesktopView, GUILayout.ExpandWidth(true)); });
+            DrawElementRow(
 				"worldScale",
 				"The multiplier for how many engine-world units are in one meter. Unity assumes 1 unit = 1 meter, so you will likely want to keep this the same. If you treat 10 units as a meter, you would set this to 10. If each world unit is 10 meters, you would set this to 0.1, and so forth.",
 				() => { serialized.FindProperty("worldScale").floatValue = EditorGUILayout.FloatField("World Scale", FoveSettings.WorldScale, GUILayout.ExpandWidth(false)); });

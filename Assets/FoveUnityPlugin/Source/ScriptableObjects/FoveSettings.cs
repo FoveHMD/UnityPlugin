@@ -16,6 +16,8 @@ namespace Fove.Unity
 		[SerializeField]
 		private bool forceCalibration = false;
 		[SerializeField]
+		private bool customDesktopView = false;
+		[SerializeField]
 		private float worldScale = 1.0f;
 		[SerializeField]
 		private float renderScale = 1.0f;
@@ -56,6 +58,11 @@ namespace Fove.Unity
 		public static bool ShouldForceCalibration
 		{
 			get { return Instance.forceCalibration; }
+		}
+
+		public static bool CustomDesktopView
+		{
+			get { return Instance.customDesktopView; }
 		}
 
 		public static float WorldScale

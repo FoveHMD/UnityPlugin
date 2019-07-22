@@ -38,6 +38,12 @@ The Unity package adds a folder called _FoveUnityPlugin_ to your project. Within
 
 ## Upgrading to 3.1.0
 
+A few public functions have been renamed so you may have to adjust your code (see the [changelog](./Changelog.md) for more details).
+
+Also as the serialized name of the Fove interface's `Client uses: gaze/orientation/position` and `Pose type` properties have changed, you will need to set those settings back from the Unity inspector.
+
+## Upgrading to 3.0.0
+
 Always back up your project before doing a major-version upgrade like this!
 
 A lot has changed in this version, and we decided not to preserve perfect backwards compatibility. All of the core features still exist, in separating HMD-relative methods from Unity-relative methods some things were moved around. 
@@ -75,6 +81,15 @@ To add overlayed UI in your game the easiest way to do is now to:
 - Add your UI objects under the UI camera or disable automatic camera pose adjustment on the UI  FoveInterface.
 
 Lastly, if you disable orientation and position on the FoveInterface for your UI, you should definitely check "Disable Timewarp" in the Compositor options foldout, otherwise you will almost certainly get uncomfortable judder as your stationary layer gets timewarped unnecessarily.
+
+### Display a different view on PC display
+
+By default the Fove plug-in optimizes the rendering and copies the HMD view as-is onto the desktop display. If you want to have some configuration settings or show diffrent view of your scene on your PC monitor, you can disable this optimization from the Fove settings. Open the Resources/FOVE Settings file in Unity editor and check the `Custom Desktop View` option. After enabling this option, enabled cameras will render to your desktop view while only the cameras (enabled or not) with a `FoveInterface` component will render to the HMD. So: 
+- To render objects only on the HMD, disable the camera component rendering those objects. 
+- To render objects only on the Desktop display, add those object layers to the `Per-Eye Culling Masks` of the fove interface or disabled (or remove) the `FoveInterface` component of the camera.
+- To display some objects on both and other only on one, split your objects into several layers and adjust the fove interface and camera Culling Masks.
+
+Note that enabling this option forces the Fove plugin to perform an extra rendering of your scene. This lowers performance and should be enabled only when needed.
 
 ### Obsolete Static `FoveInterface` Methods
 
@@ -151,6 +166,7 @@ The main view displays any project settings suggestions that we've detected may 
 The "Settings" tab (near the top of the window) shows any global settings. At the moment there are only two settings:
 
 * *Force Calibration*: Default off. If you check this, then every time you start play, it will force the FOVE runtime to recalibrate. Typically you would leave this off, however in some cases (such as trade show demos) it may be useful to have this.
+* *Custom Desktop View*: Allow you to render a different view on your desktop display. See above [Display a different view on PC display](#display-a-different-view-on-pc-display) section for more details.
 * *World Scale*: Default 1. This is the number of Unity units which represent 1 meter in your game/simulation. Unity's physics engine assumes 1 as well, so if your assets are different and you use Unity's physics in any way, make sure you adjust the gravity constant for your scale. Changing this value is important because we have to adjust eye separation and HMD offset so that the world "feels" right inside VR.
 
 ### Oversampling Ratio
@@ -278,3 +294,5 @@ There are some limitations with the current system which we may be fixing in the
 * Gaze vector can be null (0,0,0) if the calibration has been not properly run.
 * SteamVR maintains its own HMD offset values which get applied to the camera in your scene. These are almost certainly different from the position as reported by FOVE. If you want your project to be compatible with both, you can achieve this by using "Standing" mode in the `FoveInterface` inspector.
 * In addition, because SteamVR/OpenVR handle the position of the interface object on their own, the world scale values won't work when running in SteamVR mode. We recommend keeping your world scale at 1 for highest compatibility with other VR systems.
+* Unity post process stack is not supported as it internally modifies the camera projection matrix.
+* Having several fove interfaces with different compositor options (disable timewarp, etc.) at the same time is not supported.
