@@ -14,18 +14,18 @@ namespace Fove.Unity
 	{
 		// Static members
 		private static FoveManager m_sInstance;
+		private static Camera m_sRenderCamera;
 		private Headset m_headset;
 
 		// Data update events
-		private static PoseUpdateEvent _sPoseEvt;
+		private static PoseUpdateEvent _sPoseEvt = new PoseUpdateEvent();
+		private static EyePositionEvent _sEyePositionEvt = new EyePositionEvent();
+		private static GazeEvent _sGazeEvt = new GazeEvent();
 
 		// Matrix update events don't include the projection matrix because each camera may have a different
 		// near/far plane setting and so the matrix itself cannot be used. Instead, each subscriber must
 		// call into FoveManager.Instance.GetProjectionMatrices itself on this event.
-		private static EyeProjectionEvent _sEyeProjectionEvt;
-
-		private static EyePositionEvent _sEyePositionEvt;
-		private static GazeEvent _sGazeEvt;
+		private static EyeProjectionEvent _sEyeProjectionEvt = new EyeProjectionEvent();
 	
 		// Static caches
 		private static Pose _sLastPose = new Pose { orientation = new Quat() };
@@ -62,82 +62,70 @@ namespace Fove.Unity
 			public RenderTexture right;
 			public bool areNew;
 		}
-		private static Dictionary<int, EyeTextures> m_eyeTextures;
+		private static Dictionary<int, EyeTextures> m_eyeTextures = new Dictionary<int, EyeTextures>();
 
 		/// <summary>
 		/// The fove manager instance that is communicating and managing the HMD.
 		/// </summary>
 		internal static FoveManager Instance
 		{
-			get
-			{
+			get {
 				if (m_sInstance == null)
-				{
-					m_sInstance = FindObjectOfType<FoveManager>();
-					if (m_sInstance == null)
-					{
-						m_sInstance = new GameObject("FOVE Manager (dynamic)").AddComponent<FoveManager>();
-						DontDestroyOnLoad(m_sInstance);
-					}
-
-					m_worldScale = FoveSettings.WorldScale;
-					m_renderScale = FoveSettings.RenderScale;
-
-					m_submitNativeFunc = GetSubmitFunctionPtr();
-					m_wfrpNativeFunc = GetWfrpFunctionPtr();
-				}
+					InitializeStaticMembers();
 
 				return m_sInstance;
 			}
 		}
-
-		// Data update events
-		internal class PoseUpdateEvent : UnityEvent<Vector3, Vector3, Quaternion> { }
-		internal static PoseUpdateEvent PoseUpdate
+		internal static Camera RenderCamera
 		{
 			get
 			{
-				if (_sPoseEvt == null)
-					_sPoseEvt = new PoseUpdateEvent();
-				return _sPoseEvt;
+				if (m_sRenderCamera == null)
+					InitializeStaticMembers();
+
+				return m_sRenderCamera;
 			}
 		}
+
+		private static void InitializeStaticMembers()
+		{
+			m_sInstance = FindObjectOfType<FoveManager>();
+			if (m_sInstance == null)
+			{
+				m_sInstance = new GameObject("~FOVE Manager").AddComponent<FoveManager>();
+				DontDestroyOnLoad(m_sInstance);
+			}
+
+			m_sRenderCamera = m_sInstance.GetComponentInChildren<Camera>();
+			if(m_sRenderCamera == null)
+			{
+				m_sRenderCamera = new GameObject("~FOVE Renderer").AddComponent<Camera>();
+				m_sRenderCamera.transform.SetParent(m_sInstance.transform);
+				m_sRenderCamera.enabled = false;
+			}
+
+			m_worldScale = FoveSettings.WorldScale;
+			m_renderScale = FoveSettings.RenderScale;
+
+			m_submitNativeFunc = GetSubmitFunctionPtr();
+			m_wfrpNativeFunc = GetWfrpFunctionPtr();
+		}
+
+		// Data update events
+		internal class PoseUpdateEvent : UnityEvent<Vector3, Vector3, Quaternion> { }
+		internal static PoseUpdateEvent PoseUpdate { get { return _sPoseEvt; } }
 
 		// Matrix update events don't include the projection matrix because each camera may have a different
 		// near/far plane setting and so the matrix itself cannot be used. Instead, each subscriber must
 		// call into FoveManager.Instance.GetProjectionMatrices itself on this event.
 		internal class EyeProjectionEvent : UnityEvent { }
-		internal static EyeProjectionEvent EyeProjectionUpdate
-		{
-			get
-			{
-				if (_sEyeProjectionEvt == null)
-					_sEyeProjectionEvt = new EyeProjectionEvent();
-				return _sEyeProjectionEvt;
-			}
-		}
+		internal static EyeProjectionEvent EyeProjectionUpdate { get { return _sEyeProjectionEvt; } }
 
 		internal class EyePositionEvent : UnityEvent<Vector3, Vector3> { }
-		internal static EyePositionEvent EyePositionUpdate
-		{
-			get
-			{
-				if (_sEyePositionEvt == null)
-					_sEyePositionEvt = new EyePositionEvent();
-				return _sEyePositionEvt;
-			}
-		}
+		internal static EyePositionEvent EyePositionUpdate { get { return _sEyePositionEvt; } }
 
 		internal class GazeEvent : UnityEvent<GazeConvergenceData, Vector3, Vector3> { }
-		internal static GazeEvent GazeUpdate
-		{
-			get
-			{
-				if (_sGazeEvt == null)
-					_sGazeEvt = new GazeEvent();
-				return _sGazeEvt;
-			}
-		}
+		internal static GazeEvent GazeUpdate { get { return _sGazeEvt; } }
 
 		private EyeTextures MakeNewEyeTextures(int layerId, Vec2i dims)
 		{
@@ -168,9 +156,6 @@ namespace Fove.Unity
 
 		private EyeTextures GetEyeTextures(int layerId)
 		{
-			if (m_eyeTextures == null)
-				m_eyeTextures = new Dictionary<int, EyeTextures>();
-
 			EyeTextures result;
 		
 			Vec2i dims = new Vec2i(1, 1);
@@ -291,8 +276,6 @@ namespace Fove.Unity
 					Debug.LogError("An unknown error was returned by Fove CheckSoftwareVersions: " + err);
 					break;
 			}
-
-			m_eyeTextures = null;
             
             m_screenBlitMaterial = new Material(Shader.Find("Fove/EyeShader"));
 

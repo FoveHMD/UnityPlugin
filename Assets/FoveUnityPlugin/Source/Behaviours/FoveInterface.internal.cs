@@ -13,54 +13,27 @@ namespace Fove.Unity
 		[SerializeField] protected bool disableDistortion = false;
 		/*[SerializeField] */protected CompositorLayerType layerType = CompositorLayerType.Base; // enforce the use of the base layer for the moment
 		
-		protected Camera _cam;
+		private Camera _cam;
 
-		private struct StereoEyeData
+		protected struct StereoEyeData
 		{
 			public Matrix4x4 projection;
 			public Vector3 position;
 		}
-		private StereoEyeData[] _stereoData = new StereoEyeData[2];
+		protected StereoEyeData[] _stereoData = new StereoEyeData[2];
 
-		private struct PoseData
+		protected struct PoseData
 		{
 			public Vector3 position;
 			public Quaternion orientation;
 		}
-		private PoseData _poseData = new PoseData();
+		protected PoseData _poseData = new PoseData { orientation = Quaternion.identity };
 
-		private GazeConvergenceData _eyeConverge = new GazeConvergenceData(new Ray(Vector3.zero, Vector3.forward), 7f);
+		protected GazeConvergenceData _eyeConverge = new GazeConvergenceData(new Ray(Vector3.zero, Vector3.forward), 7f);
 		protected Ray _eyeRayLeft = new Ray(Vector3.zero, Vector3.forward);
 		protected Ray _eyeRayRight = new Ray(Vector3.zero, Vector3.forward);
-
-		// Private callbacks and support for HMD events
-		private void RegisterCallbacks()
-		{
-			var createInfo = new CompositorLayerCreateInfo
-			{
-				alphaMode = AlphaMode.Auto,
-				disableDistortion = disableDistortion,
-				disableFading = disableFading,
-				disableTimewarp = disableTimewarp,
-				type = layerType
-			};
-			FoveManager.RegisterInterface(createInfo, this);
-			FoveManager.PoseUpdate.AddListener(UpdatePoseData);
-			FoveManager.EyeProjectionUpdate.AddListener(UpdateGazeMatrices);
-			FoveManager.EyePositionUpdate.AddListener(UpdateEyePosition);
-			FoveManager.GazeUpdate.AddListener(UpdateGaze);
-		}
-
-		private void UnregisterCallbacks()
-		{
-			FoveManager.UnregisterInterface(this);
-			FoveManager.PoseUpdate.RemoveListener(UpdatePoseData);
-			FoveManager.EyeProjectionUpdate.RemoveListener(UpdateGazeMatrices);
-			FoveManager.EyePositionUpdate.RemoveListener(UpdateEyePosition);
-			FoveManager.GazeUpdate.RemoveListener(UpdateGaze);
-		}
-
-		private void UpdatePoseData(Vector3 position, Vector3 standingPosition, Quaternion orientation)
+		
+		virtual protected void UpdatePoseData(Vector3 position, Vector3 standingPosition, Quaternion orientation)
 		{
 			if (fetchOrientation)
 				_poseData.orientation = orientation;
@@ -81,18 +54,18 @@ namespace Fove.Unity
 			transform.localRotation = _poseData.orientation;
 		}
 
-		private void UpdateGazeMatrices()
+		virtual protected void UpdateGazeMatrices()
 		{
 			FoveManager.GetProjectionMatrices(_cam.nearClipPlane, _cam.farClipPlane, ref _stereoData[0].projection, ref _stereoData[1].projection);
 		}
 
-		private void UpdateEyePosition(Vector3 left, Vector3 right)
+		virtual protected void UpdateEyePosition(Vector3 left, Vector3 right)
 		{
 			_stereoData[0].position = left;
 			_stereoData[1].position = right;
 		}
 
-		private void UpdateGaze(GazeConvergenceData conv, Vector3 vecLeft, Vector3 vecRight)
+		virtual protected void UpdateGaze(GazeConvergenceData conv, Vector3 vecLeft, Vector3 vecRight)
 		{
 			// converge data
 			var localConvDist = 0f;
@@ -110,67 +83,7 @@ namespace Fove.Unity
 			CalculateGazeRays(ref _stereoData[0].position, ref _stereoData[1].position, ref usedDirLeft, ref usedDirRight, out _eyeRayLeft, out _eyeRayRight);
 		}
 
-		private GazeConvergenceData GetWorldSpaceConvergence(ref Ray ray, float distance)
-		{
-			var worldOrigin = transform.TransformPoint(ray.origin);
-			var worldEnd = transform.TransformPoint(ray.origin + distance * ray.direction);
-			var worldDirection = transform.TransformDirection(ray.direction);
-			var worldDistance = (worldEnd - worldOrigin).magnitude;
-			var worldRay = new Ray(worldOrigin, worldDirection);
-
-			return new GazeConvergenceData(worldRay, worldDistance);
-		}
-
-		private void CalculateGazeRays(ref Vector3 offsetLeft, ref Vector3 offsetRight, ref Vector3 dirLeft, ref Vector3 dirRight, out Ray leftRay, out Ray rightRay)
-		{
-			var hmdToWorldMat = transform.localToWorldMatrix;
-			Utils.CalculateGazeRays(ref hmdToWorldMat, ref dirLeft, ref dirRight, ref offsetLeft, ref offsetRight, out leftRay, out rightRay);
-		}
-
-		/// <summary>
-		/// Calculate Unity Ray objects based on the origin points of the user's eyes in 3D and the calculated
-		/// gaze direction.
-		/// </summary>
-		/// <param name="leftRay"></param>
-		/// <param name="rightRay"></param>
-		/// <param name="immediate"></param>
-		/// <remarks>Gaze can either be enabled or disabled, and different FoveInterface subclasses could have
-		/// different ways that are better for getting origin positions, so we call into abstract methods
-		/// for those and let the implementations themselves provide the correct position.</remarks>
-		protected void CalculateGazeRays(out Ray leftRay, out Ray rightRay, Vector3 vecLeft, Vector3 vecRight)
-		{
-			var origin = transform.position;
-			var lPosition = origin + _poseData.orientation * _stereoData[0].position;
-			var rPosition = origin + _poseData.orientation * _stereoData[1].position;
-			// TODO remove this functions!!!
-			leftRay = new Ray(lPosition, transform.TransformDirection(vecLeft.normalized));
-			rightRay = new Ray(rPosition, transform.TransformDirection(vecRight.normalized));
-		}
-
-		/// <summary>
-		/// Position this interface to one eye or the other. If a value other than left/right is sent
-		/// in it resets the position to zero for you. This is here for internal use, but it's public
-		/// because you may come up with a reason to need this.
-		/// </summary>
-		/// <param name="which">The eye you'd like the interface's position to match</param>
-		private void PositionToEye(Eye which)
-		{
-			var targetPosition = Vector3.zero;
-			if (which == Eye.Left || which == Eye.Right)
-			{
-				var eyeData = _stereoData[(int)which - 1];
-				targetPosition = _poseData.position + _poseData.orientation * eyeData.position;
-			}
-
-			transform.localPosition = targetPosition;
-			transform.localRotation = _poseData.orientation;
-
-			//var actual = transform.position;
-			//var delta = Vector3.right * 0.01f;
-			//Debug.DrawLine(actual - delta, actual + delta, Color.black);
-		}
-
-		protected bool ShouldRenderEye(Eye which)
+		virtual protected bool ShouldRenderEye(Eye which)
 		{
 			if (which == Eye.Neither || which == Eye.Both)
 				return false;
@@ -187,36 +100,38 @@ namespace Fove.Unity
 		/// returns immediately.
 		/// </summary>
 		/// <param name="which">The eye you want to render to the provided texture</param>
-		/// <param name="rt">The target texture to use for rendering the specified eye.</param>
-		internal virtual void RenderEye(Eye which, RenderTexture rt)
+		/// <param name="targetTexture">The target texture to use for rendering the specified eye.</param>
+		internal protected virtual void RenderEye(Eye which, RenderTexture targetTexture)
 		{
 			if (!ShouldRenderEye(which))
 				return;
 
+			var renderCam = FoveManager.RenderCamera;
+			var renderCamParent = renderCam.transform.parent;
+
+			renderCam.CopyFrom(_cam);
+
+			var eyeCullMask = which == Eye.Left ? cullMaskLeft : cullMaskRight;
+			renderCam.cullingMask = renderCam.cullingMask & ~eyeCullMask;
+
 			var eyeData = _stereoData[(int)which - 1];
 
-			var origCullMask = _cam.cullingMask;
-			var eyeCullMask = which == Eye.Left ? cullMaskLeft : cullMaskRight;
-			_cam.cullingMask = origCullMask & ~eyeCullMask;
+			renderCamParent.position = transform.position;
+			renderCamParent.rotation = transform.rotation;
+			renderCam.transform.localRotation = Quaternion.identity;
+			renderCam.transform.localPosition = eyeData.position;
 
-			PositionToEye(which);
+			renderCam.projectionMatrix = eyeData.projection;
+			renderCam.targetTexture = targetTexture;
 
-			_cam.projectionMatrix = eyeData.projection;
-			_cam.targetTexture = rt;
-
-			_cam.Render();
-
-			_cam.cullingMask = origCullMask;
-			_cam.targetTexture = null;
-			_cam.ResetProjectionMatrix();
-			transform.localPosition = _poseData.position;
-			transform.localRotation = _poseData.orientation;
+			renderCam.Render();
 		}
 
 		/****************************************************************************************************\
 		 * GameObject lifecycle methods
 		\****************************************************************************************************/
-		private void Awake()
+
+		virtual protected void Awake()
 		{
 			if (transform.parent == null)
 			{
@@ -233,17 +148,33 @@ namespace Fove.Unity
 				_cam.enabled = false;
 		}
 
-		private void OnEnable()
+		virtual protected void OnEnable()
 		{
-			RegisterCallbacks();
+			var createInfo = new CompositorLayerCreateInfo
+			{
+				alphaMode = AlphaMode.Auto,
+				disableDistortion = disableDistortion,
+				disableFading = disableFading,
+				disableTimewarp = disableTimewarp,
+				type = layerType
+			};
+			FoveManager.RegisterInterface(createInfo, this);
+			FoveManager.PoseUpdate.AddListener(UpdatePoseData);
+			FoveManager.EyeProjectionUpdate.AddListener(UpdateGazeMatrices);
+			FoveManager.EyePositionUpdate.AddListener(UpdateEyePosition);
+			FoveManager.GazeUpdate.AddListener(UpdateGaze);
 		}
 
-		protected void OnDisable()
+		virtual protected void OnDisable()
 		{
-			UnregisterCallbacks();
+			FoveManager.UnregisterInterface(this);
+			FoveManager.PoseUpdate.RemoveListener(UpdatePoseData);
+			FoveManager.EyeProjectionUpdate.RemoveListener(UpdateGazeMatrices);
+			FoveManager.EyePositionUpdate.RemoveListener(UpdateEyePosition);
+			FoveManager.GazeUpdate.RemoveListener(UpdateGaze);
 		}
 		
-		private bool CanSee()
+		virtual protected bool CanSee()
 		{
 			var closedEyes = FoveManager.CheckEyesClosed();
 			switch (gazeCastPolicy)
@@ -259,7 +190,28 @@ namespace Fove.Unity
 			throw new NotImplementedException("Unknown gaze cast policy '" + gazeCastPolicy + "'");
 		}
 
-		private bool InternalGazecastHelperSingle(Collider col, out RaycastHit hit, float maxDistance)
+		/****************************************************************************************************\
+		 * HELPER METHODS
+		\****************************************************************************************************/
+
+		protected GazeConvergenceData GetWorldSpaceConvergence(ref Ray ray, float distance)
+		{
+			var worldOrigin = transform.TransformPoint(ray.origin);
+			var worldEnd = transform.TransformPoint(ray.origin + distance * ray.direction);
+			var worldDirection = transform.TransformDirection(ray.direction);
+			var worldDistance = (worldEnd - worldOrigin).magnitude;
+			var worldRay = new Ray(worldOrigin, worldDirection);
+
+			return new GazeConvergenceData(worldRay, worldDistance);
+		}
+
+		protected void CalculateGazeRays(ref Vector3 offsetLeft, ref Vector3 offsetRight, ref Vector3 dirLeft, ref Vector3 dirRight, out Ray leftRay, out Ray rightRay)
+		{
+			var hmdToWorldMat = transform.localToWorldMatrix;
+			Utils.CalculateGazeRays(ref hmdToWorldMat, ref dirLeft, ref dirRight, ref offsetLeft, ref offsetRight, out leftRay, out rightRay);
+		}
+
+		protected bool InternalGazecastHelperSingle(Collider col, out RaycastHit hit, float maxDistance)
 		{
 			bool eyesInsideCollider = (col.bounds.Contains(_eyeConverge.ray.origin));
 
@@ -275,7 +227,7 @@ namespace Fove.Unity
 			return false;
 		}
 
-		private bool InternalGazecastHelper(out RaycastHit hit, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggers)
+		protected bool InternalGazecastHelper(out RaycastHit hit, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggers)
 		{
 			if (!CanSee())
 			{
@@ -286,22 +238,18 @@ namespace Fove.Unity
 			return Physics.Raycast(_eyeConverge.ray, out hit, maxDistance, layerMask, queryTriggers);
 		}
 
-		private RaycastHit[] InternalGazecastHelper_All(float maxDistance, int layerMask, QueryTriggerInteraction queryTriggers)
+		protected RaycastHit[] InternalGazecastHelperAll(float maxDistance, int layerMask, QueryTriggerInteraction queryTriggers)
 		{
 			if (!CanSee())
-			{
 				return null;
-			}
 
 			return Physics.RaycastAll(_eyeConverge.ray, maxDistance, layerMask, queryTriggers);
 		}
 
-		private int InternalGazecastHelper_NonAlloc(RaycastHit[] results, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggers)
+		protected int InternalGazecastHelperNonAlloc(RaycastHit[] results, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggers)
 		{
 			if (!CanSee())
-			{
 				return 0;
-			}
 
 			return Physics.RaycastNonAlloc(_eyeConverge.ray, results, maxDistance, layerMask, queryTriggers);
 		}

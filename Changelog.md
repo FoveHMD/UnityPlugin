@@ -1,5 +1,10 @@
 # FOVE Unity Plugin Changelog
 
+## 3.1.1
+* Fix the layout of values of the ResearchGaze.
+* Fix the stereo projection depth of game objects added under the FoveInterface objects.
+* Turn most fields and members of FoveInterface to protected so that the class can be inherited
+
 ## 3.1.0
 
 * Rename `Fove::Ray` into `Fove::EyeRay`

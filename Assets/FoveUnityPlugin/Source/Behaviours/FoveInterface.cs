@@ -188,9 +188,7 @@ namespace Fove.Unity
 			foreach (var c in cols)
 			{
 				if (InternalGazecastHelperSingle(c, out hit, maxDistance))
-				{
 					return true;
-				}
 			}
 
 			hit = new RaycastHit();
@@ -212,7 +210,7 @@ namespace Fove.Unity
 		/// <returns>Whether or not any of the colliders with the specified mask are being looked at.</returns>
 		public RaycastHit[] GazecastAll(float maxDistance = Mathf.Infinity, int layerMask = Physics.DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
 		{
-			return InternalGazecastHelper_All(maxDistance, layerMask, queryTriggerInteraction);
+			return InternalGazecastHelperAll(maxDistance, layerMask, queryTriggerInteraction);
 		}
 
 		/// <summary>
@@ -232,7 +230,7 @@ namespace Fove.Unity
 		/// <returns>Whether or not any of the colliders with the specified mask are being looked at.</returns>
 		public int GazecastNonAlloc(RaycastHit[] results, float maxDistance = Mathf.Infinity, int layerMask = Physics.DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
 		{
-			return InternalGazecastHelper_NonAlloc(results, maxDistance, layerMask, queryTriggerInteraction);
+			return InternalGazecastHelperNonAlloc(results, maxDistance, layerMask, queryTriggerInteraction);
 		}
 		#endregion
 
