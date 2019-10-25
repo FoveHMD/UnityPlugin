@@ -2,6 +2,7 @@
 using UnityEditor;
 #endif
 
+using System.Linq;
 using UnityEngine;
 
 namespace Fove.Unity
@@ -73,6 +74,24 @@ namespace Fove.Unity
 		public static float RenderScale
 		{
 			get { return Instance.renderScale; }
+		}
+
+		public static bool IsUsingOpenVR
+		{
+			get
+			{
+				bool vrEnabled;
+				string[] vrSupportedDevices;
+
+#if UNITY_2017_2_OR_NEWER
+				vrEnabled = UnityEngine.XR.XRSettings.enabled;
+				vrSupportedDevices = UnityEngine.XR.XRSettings.supportedDevices;
+#else
+				vrEnabled = UnityEngine.VR.VRSettings.enabled;
+				vrSupportedDevices = UnityEngine.VR.VRSettings.supportedDevices;
+#endif
+				return vrEnabled && vrSupportedDevices.Any(d => d == "OpenVR");
+			}
 		}
 	}
 }

@@ -7,4 +7,5 @@ Library/
 Temp/
 Packages/
 Build/
+obj/
 fove_recorded_results*

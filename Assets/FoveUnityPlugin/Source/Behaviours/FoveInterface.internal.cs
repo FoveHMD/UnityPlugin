@@ -106,25 +106,37 @@ namespace Fove.Unity
 			if (!ShouldRenderEye(which))
 				return;
 
-			var renderCam = FoveManager.RenderCamera;
-			var renderCamParent = renderCam.transform.parent;
-
-			renderCam.CopyFrom(_cam);
-
+			var origCullMask = _cam.cullingMask;
 			var eyeCullMask = which == Eye.Left ? cullMaskLeft : cullMaskRight;
-			renderCam.cullingMask = renderCam.cullingMask & ~eyeCullMask;
+			_cam.cullingMask = origCullMask & ~eyeCullMask;
 
 			var eyeData = _stereoData[(int)which - 1];
+			var eyePosOffset = eyeData.position;
 
-			renderCamParent.position = transform.position;
-			renderCamParent.rotation = transform.rotation;
-			renderCam.transform.localRotation = Quaternion.identity;
-			renderCam.transform.localPosition = eyeData.position;
+			// move the camera to the eye position
+			transform.localPosition = _poseData.position + _poseData.orientation * eyePosOffset;
+			transform.localRotation = _poseData.orientation;
 
-			renderCam.projectionMatrix = eyeData.projection;
-			renderCam.targetTexture = targetTexture;
+			// move camera children inversly to keep the stereo projection effect
+			foreach (Transform child in transform)
+				child.localPosition -= eyePosOffset;
 
-			renderCam.Render();
+			_cam.projectionMatrix = eyeData.projection;
+			_cam.targetTexture = targetTexture;
+
+			_cam.Render();
+
+			_cam.cullingMask = origCullMask;
+			_cam.targetTexture = null;
+			_cam.ResetProjectionMatrix();
+
+			// reset camera position
+			transform.localPosition = _poseData.position;
+			transform.localRotation = _poseData.orientation;
+
+			// reset camera children position
+			foreach (Transform child in transform)
+				child.localPosition += eyePosOffset;
 		}
 
 		/****************************************************************************************************\
@@ -144,7 +156,7 @@ namespace Fove.Unity
 				transform.localRotation = Quaternion.identity;
 			}
 			_cam = GetComponent<Camera>();
-            if (!FoveSettings.CustomDesktopView)
+            if (!FoveSettings.CustomDesktopView && !FoveSettings.IsUsingOpenVR)
 				_cam.enabled = false;
 		}
 

@@ -14,7 +14,6 @@ namespace Fove.Unity
 	{
 		// Static members
 		private static FoveManager m_sInstance;
-		private static Camera m_sRenderCamera;
 		private Headset m_headset;
 
 		// Data update events
@@ -56,7 +55,9 @@ namespace Fove.Unity
 
         private Material m_screenBlitMaterial;
 
-        private class EyeTextures
+		private ClientCapabilities currentCapabilities = ClientCapabilities.None;
+
+		private class EyeTextures
 		{
 			public RenderTexture left;
 			public RenderTexture right;
@@ -76,16 +77,6 @@ namespace Fove.Unity
 				return m_sInstance;
 			}
 		}
-		internal static Camera RenderCamera
-		{
-			get
-			{
-				if (m_sRenderCamera == null)
-					InitializeStaticMembers();
-
-				return m_sRenderCamera;
-			}
-		}
 
 		private static void InitializeStaticMembers()
 		{
@@ -94,14 +85,6 @@ namespace Fove.Unity
 			{
 				m_sInstance = new GameObject("~FOVE Manager").AddComponent<FoveManager>();
 				DontDestroyOnLoad(m_sInstance);
-			}
-
-			m_sRenderCamera = m_sInstance.GetComponentInChildren<Camera>();
-			if(m_sRenderCamera == null)
-			{
-				m_sRenderCamera = new GameObject("~FOVE Renderer").AddComponent<Camera>();
-				m_sRenderCamera.transform.SetParent(m_sInstance.transform);
-				m_sRenderCamera.enabled = false;
 			}
 
 			m_worldScale = FoveSettings.WorldScale;
@@ -234,6 +217,37 @@ namespace Fove.Unity
 					list.Remove(registeredMatch);
 			}
 		}
+
+		private static ClientCapabilities ComputeRequiredCapabilities()
+		{
+			Func<FoveInterface, ClientCapabilities> getCapabilities = xface =>
+			{
+				var capabilities = ClientCapabilities.None;
+				if(xface.isActiveAndEnabled)
+				{
+					if (xface.fetchGaze)
+						capabilities |= ClientCapabilities.Gaze;
+					if (xface.fetchOrientation)
+						capabilities |= ClientCapabilities.Orientation;
+					if (xface.fetchPosition)
+						capabilities |= ClientCapabilities.Position;
+				}
+				return capabilities;
+			};
+
+			var aggregatedCaps = ClientCapabilities.None;
+
+			foreach(var interfaceList in m_interfaceStacks.Values)
+				foreach (var interfaceInfo in interfaceList)
+					aggregatedCaps |= getCapabilities(interfaceInfo.xface);
+
+			// Also take into account unregistered interface in order to avoid to have 1 frame of delay
+			// (even if internally add/removing a new capability may take more than 1 frame anyway)
+			foreach(var interfaceInfo in unregisteredInterfaces)
+				aggregatedCaps |= getCapabilities(interfaceInfo.xface);
+
+			return aggregatedCaps;
+		}
 		
 		/*******************************************************************************\
 		 * MonoBehaviour / instance methods                                            *
@@ -241,51 +255,60 @@ namespace Fove.Unity
 		private FoveManager()
 		{
 			if (m_sInstance != null)
-			{
 				Debug.Log("Found an existing instance");
-			}
 
-			ClientCapabilities capabilities = 0;
-			capabilities |= ClientCapabilities.Gaze;
-			capabilities |= ClientCapabilities.Orientation;
-			capabilities |= ClientCapabilities.Position;
-
-			m_headset = new Headset(capabilities);
+			m_headset = new Headset(currentCapabilities);
 		}
 
 		void Awake()
+		{
+			ResetNativeState();
+			m_screenBlitMaterial = new Material(Shader.Find("Fove/EyeShader"));
+
+			StartCoroutine(CheckServiceRunningCoroutine());
+		}
+
+		private void OnApplicationQuit()
+		{
+			m_headset.Dispose();
+			DestroyNativeResources();
+		}
+
+		private IEnumerator CheckServiceRunningCoroutine()
+		{
+			if(!CheckServiceRunning(true))
+			{
+				var wait = new WaitForSecondsRealtime(0.5f);
+				while (CheckServiceRunning(false))
+					yield return wait;
+			}
+			StartCoroutine(CheckForHeadsetCoroutine());
+		}
+
+		private bool CheckServiceRunning(bool logNotConnected)
 		{
 			var err = CheckSoftwareVersions();
 			switch (err)
 			{
 				case ErrorCode.None:
-					break;
+					return true;
 				case ErrorCode.Connect_ClientVersionTooOld:
 					Debug.LogError("Plugin client version is too old; please seek a newer plugin package.");
-					break;
+					return true;
 				case ErrorCode.Connect_RuntimeVersionTooOld:
 					Debug.LogError("Fove runtime version is too old; please update your runtime.");
-					break;
+					return true;
 				case ErrorCode.Server_General:
 					Debug.LogError("An unhandled exception was thrown by Fove CheckSoftwareVersions");
-					break;
+					return true;
 				case ErrorCode.Connect_NotConnected:
-					Debug.Log("[FOVE] No runtime service found; disabling.");
-					return;
+					if(logNotConnected)
+						Debug.Log("No runtime service found. Please start the fove runtime service.");
+					return false;
 				default:
 					Debug.LogError("An unknown error was returned by Fove CheckSoftwareVersions: " + err);
-					break;
+					return true;
 			}
-            
-            m_screenBlitMaterial = new Material(Shader.Find("Fove/EyeShader"));
-
-			ResetNativeState();
-			StartCoroutine(CheckForHeadsetCoroutine());
-		}
-
-		private void OnApplicationQuit()
-		{
-			DestroyNativeResources();
 		}
 
 		private IEnumerator CheckForHeadsetCoroutine()
@@ -340,9 +363,30 @@ namespace Fove.Unity
 				{
 					Debug.Log("HMD was disconnected.");
 					break;
-                }
+				}
 
-                UpdateHmdData();
+				// update the headset capabilities if changed
+				var newCapabilities = ComputeRequiredCapabilities();
+				if (currentCapabilities != newCapabilities)
+				{
+					var removedCaps = currentCapabilities & ~newCapabilities;
+					if(removedCaps != ClientCapabilities.None)
+					{
+						UnregisterCapabilities(removedCaps);
+						m_headset.UnregisterCapabilities(removedCaps);
+					}
+
+					var addedCaps = newCapabilities & ~currentCapabilities;
+					if (addedCaps != ClientCapabilities.None)
+					{
+						RegisterCapabilities(addedCaps);
+						m_headset.RegisterCapabilities(addedCaps);
+					}
+
+					currentCapabilities = newCapabilities;
+				}
+
+				UpdateHmdData();
 				PoseUpdate.Invoke(m_sHeadPosition, m_sStandingPosition, m_sHeadRotation);
 				EyePositionUpdate.Invoke(m_sLeftEyeOffset, m_sRightEyeOffset);
 				EyeProjectionUpdate.Invoke();
@@ -471,12 +515,11 @@ namespace Fove.Unity
 
 		private static bool CompositorReadyCheck()
 		{
-			bool isCompositorReady;
-			var err = IsCompositorReady(out isCompositorReady);
+			var isCompositorReady = false;
+			var err = IsCompositorReady(ref isCompositorReady);
 			if (err != ErrorCode.None)
-			{
 				Debug.Log("[FOVE] Error checking compositor state: " + err);
-			}
+
 			return isCompositorReady;
 		}
 
@@ -488,13 +531,18 @@ namespace Fove.Unity
 		private static extern IntPtr GetWfrpFunctionPtr();
 
 		[DllImport("FoveUnityFuncs", EntryPoint = "resetState")]
-		private static extern IntPtr ResetNativeState();
+		private static extern void ResetNativeState();
 		[DllImport("FoveUnityFuncs", EntryPoint = "destroyResources")]
-		private static extern IntPtr DestroyNativeResources();
+		private static extern void DestroyNativeResources();
+
+		[DllImport("FoveUnityFuncs", EntryPoint = "registerCapabilities")]
+		private static extern void RegisterCapabilities(ClientCapabilities caps);
+		[DllImport("FoveUnityFuncs", EntryPoint = "unregisterCapabilities")]
+		private static extern void UnregisterCapabilities(ClientCapabilities caps);
 
 		[DllImport("FoveUnityFuncs", EntryPoint = "isCompositorReady")]
 		[return: MarshalAs(UnmanagedType.I1)]
-		private static extern ErrorCode IsCompositorReady(out bool isReady);
+		private static extern ErrorCode IsCompositorReady(ref bool isReady);
 		[DllImport("FoveUnityFuncs", EntryPoint = "getLayerForCreateInfo")]
 		private static extern int GetLayerForCreateInfo(CompositorLayerCreateInfo info);
 		[DllImport("FoveUnityFuncs", EntryPoint = "getIdealLayerDimensions")]

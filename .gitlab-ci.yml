@@ -6,7 +6,7 @@ variables:
     VERBOSE: "1"
     MSBUILDDISABLENODEREUSE: "1"
 
-Build (Windows):
+Build Package:
     stage: Build
     tags:
         - unity
@@ -17,13 +17,14 @@ Build (Windows):
         # double backslash in double quotes, or single backslash without quotes
         - $env:Path += ";C:\\Program Files\\Unity\\Editor"
         - echo $env:Path
-        - mkdir Build
-        - Unity.exe -quit -batchmode -serial $env:UNITY_CI_SERIAL -username $env:UNITY_CI_USERNAME -password $env:UNITY_CI_PASSWORD -projectPath "$pwd" -buildWindows64Player "Build/PluginBuildTest.exe" | Wait-Process
-        - Unity.exe -quit -batchmode -serial $env:UNITY_CI_SERIAL -username $env:UNITY_CI_USERNAME -password $env:UNITY_CI_PASSWORD -projectPath "$pwd" -exportPackage "Assets/FoveUnityPlugin" "Fove_Unity_Plugin.unitypackage" | Wait-Process
+        - $global:BuildFolder="UnityPluginTest"
+        - mkdir $global:BuildFolder
+        - cmd.exe /c "buildPlayer.bat $env:UNITY_CI_SERIAL $env:UNITY_CI_USERNAME $env:UNITY_CI_PASSWORD $global:BuildFolder/UnityPluginTest.exe"
+        - cmd.exe /c "buildPackage.bat $env:UNITY_CI_SERIAL $env:UNITY_CI_USERNAME $env:UNITY_CI_PASSWORD"
     artifacts:
         expire_in: 1 week
         paths:
-            - Build/*
+            - UnityPluginTest/*
             - Fove_Unity_Plugin.unitypackage
 
 Make Release Package:
@@ -33,19 +34,25 @@ Make Release Package:
         - linux
         - docker
     dependencies:
-        - Build (Windows)
+        - Build Package
     script:
         - find .
         - export PLUGIN_VERSION=`cat Changelog.md | grep "##" | head -n1 | sed "s/## //"`
-        - export ZIP_NAME="Unity_Plugin_$PLUGIN_VERSION"
-        - mkdir "$ZIP_NAME"
-        - mv Changelog.md "$ZIP_NAME/"
-        - mv QuickStart.md "$ZIP_NAME/"
-        - mv "FOVE Unity Plugin Guide.md" "$ZIP_NAME/"
-        - mv LICENSE.txt "$ZIP_NAME/"
-        - mv Fove_Unity_Plugin.unitypackage "$ZIP_NAME/"
-        - zip -r "$ZIP_NAME.zip" "$ZIP_NAME"
+        - export PACKAGE_ZIP_NAME="Unity_Plugin_$PLUGIN_VERSION"
+        - export EXE_BUILD_FOLDER="UnityPluginTest"
+        - export EXE_ZIP_NAME="${EXE_BUILD_FOLDER}_$PLUGIN_VERSION"
+        - mkdir "$PACKAGE_ZIP_NAME"
+        - mv Changelog.md "$PACKAGE_ZIP_NAME/"
+        - mv QuickStart.md "$PACKAGE_ZIP_NAME/"
+        - mv "FOVE Unity Plugin Guide.md" "$PACKAGE_ZIP_NAME/"
+        - mv LICENSE.txt "$PACKAGE_ZIP_NAME/"
+        - mv Fove_Unity_Plugin.unitypackage "$PACKAGE_ZIP_NAME/"
+        - zip -r "$PACKAGE_ZIP_NAME.zip" "$PACKAGE_ZIP_NAME"
+        - zip -r "$EXE_ZIP_NAME.zip" "$EXE_BUILD_FOLDER"
         - find .
+        - export TODAY=`date +%Y_%m_%d-%H_%M_%S`
+        - cp "$EXE_ZIP_NAME.zip" $FOVE_DATASETS/Random/CI_Builds/UnityPluginTest/$TODAY-$CI_PIPELINE_ID-$EXE_ZIP_NAME.zip
+        - cp "$PACKAGE_ZIP_NAME.zip" $FOVE_DATASETS/Random/CI_Builds/UnityPlugin/$TODAY-$CI_PIPELINE_ID-$PACKAGE_ZIP_NAME.zip
     artifacts:
         name: "FoveUnityPlugin"
         expire_in: 2 weeks

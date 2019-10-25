@@ -221,12 +221,18 @@ namespace Fove.Unity
 
 		protected override bool RealIsOkay()
 		{
+#if UNITY_2019_1_OR_NEWER
+			return true;
+#else
 			return PlayerSettings.displayResolutionDialog == ResolutionDialogSetting.Disabled;
+#endif
 		}
 
 		protected override void RealFix()
 		{
+#if !UNITY_2019_1_OR_NEWER
 			PlayerSettings.displayResolutionDialog = ResolutionDialogSetting.Disabled;
+#endif
 		}
 	}
 

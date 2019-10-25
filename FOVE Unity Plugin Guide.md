@@ -145,18 +145,6 @@ From here on, the guide assumes you are not using any legacy/obsolete methods or
 
 ---
 
-## Using Image Effects
-
-We fully support using fullscreen image effects in all supported versions of Unity. Under most use cases, everything should appear in each eye exactly how it appears in the Unity Editor.
-
-**NOTE:** The shader stack 2.0 resets the camera projection matrix during the `OnPreCull` method every frame, which removes the custom projection we set via the FOVE plugin. It seems that this reset is only necessary if you use their TAA effect. We've been able to use the source version of the plugin and comment out the line that resets the camera's projection matrix without any issues. The line is in the file `PostProcessLayer.cs`. We wish you luck, and hope that this requirement gets fixed before the new stack is released.
-
-### HDR
-
-The FOVE native client does not support HDR images. If you use HDR on your Unity cameras without adding a tonemapping effect, you may get a dull, grayed-out looking scene in your headset.
-
----
-
 ## The FOVE Settings Window
 
 You can open the FOVE settings window by selecting the "FOVE" menu and selecting "Edit Settings..." There is a panel on the right which displays details about most options of you put your mouse cursor over them.
@@ -273,6 +261,46 @@ If you want to get the immediate, most up-to-date, current information from the 
 * `GetHMDPosition_Immediate`
 * `GetLeftEyeVector_Immediate`
 * `GetRightEyeVector_Immediate`
+
+---
+
+## Use OpenVR and SteamVR compositor to render your game instead of default Fove services
+
+From version 3.1.2, it is possible to use OpenVR to render your game from the Unity plugin.
+
+To do so, proceed as following:
+1. Install SteamVr and Fove SteamVR plugin
+2. Disable the auto-start of the Fove compositor from the fove tray 
+3. Enable VR support in the Unity player settings of your project. Add the `OpenVR` sdk in the list of supported VR sdks.
+4. Add a fove interface prefab to your game (if not already done)
+5. Start your game normally
+
+For more information about (1) and (2), check detailed instructions [here](https://support.getfove.com/hc/en-us/articles/115001954713-Getting-started-with-Steam-FOVE)
+
+Note that the fove interface prefab is still needed to update your camera pose and get eye gaze data information as OpenVR does not provide any eye gaze API.
+
+Also note that the following properties have no effect when using the OpenVR api:
+- FoveSettings:
+  - Render Scale
+  - Custom Desktop View
+- FoveInterface:
+  - Eye Targets
+  - Per-Eye Culling Masks
+  - Compositor options
+
+---
+
+## Using Image Effects
+
+We fully support using fullscreen image effects in all supported versions of Unity. Under most use cases, everything should appear in each eye exactly how it appears in the Unity Editor.
+
+**NOTE:** The shader stack 2.0 resets the camera projection matrix during the `OnPreCull` method every frame, which removes the custom projection we set via the FOVE plugin. It seems that this reset is only necessary if you use their TAA effect. We've been able to use the source version of the plugin and comment out the line that resets the camera's projection matrix without any issues. The line is in the file `PostProcessLayer.cs`. We wish you luck, and hope that this requirement gets fixed before the new stack is released.
+
+### HDR
+
+The FOVE native client does not support HDR images. If you use HDR on your Unity cameras without adding a tonemapping effect, you may get a dull, grayed-out looking scene in your headset.
+
+---
 
 ## Add-ins and Camera Images
 

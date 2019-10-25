@@ -1,5 +1,13 @@
 # FOVE Unity Plugin Changelog
 
+## 3.1.2
+* Fix support for custom post effects using the `OnRenderImage` method
+* Add support for UI canvas using render mode `Screen space - camera`
+* Allow to start the Fove HMD services after the game is started
+* Allow to render to the Fove HMD through the OpenVR API and SteamVR compositor
+* Add property `IsUsingOpenVR` in the `FoveSettings`
+* Add support for registration and unregistration of new capabilities at runtime
+
 ## 3.1.1
 * Fix the layout of values of the ResearchGaze.
 * Fix the stereo projection depth of game objects added under the FoveInterface objects.

@@ -315,6 +315,7 @@ namespace Fove.Unity
 				eyeTextures.areNew = true; // force to reset eye texture
 
 			ResetNativeState();
+			RegisterCapabilities(Instance.currentCapabilities);
 		}
 
 		/// <summary>

@@ -7,6 +7,6 @@
 	{
 		public const int MAJOR = 3;
 		public const int MINOR = 1;
-		public const int RELEASE = 0;
+		public const int RELEASE = 2;
 	}
 }
