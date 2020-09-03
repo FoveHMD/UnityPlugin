@@ -3,11 +3,11 @@ using UnityEngine.SceneManagement;
 
 public class LoadSceneAsync : MonoBehaviour
 {
-	public SceneField sceneToLoad;
+    public SceneField sceneToLoad;
 
-	void Update ()
-	{
-		if (Input.GetKeyUp(KeyCode.Space))
-			SceneManager.LoadSceneAsync(sceneToLoad);
-	}
+    void Update ()
+    {
+        if (Input.GetKeyUp(KeyCode.Space))
+            SceneManager.LoadSceneAsync(sceneToLoad);
+    }
 }

@@ -3,116 +3,122 @@ using UnityEngine;
 
 namespace Fove.Unity
 {
-	public static class FoveResearch
-	{
-		private static Texture2D m_sEyesTexture;
-		private static Texture2D m_sPositionTexture;
+    /// <summary>
+    /// Static class to query Fove research information
+    /// </summary>
+    /// <remarks>Client backward compatibility is not ensure for Research features.</remarks>
+    public static partial class FoveResearch
+    {
+        /// <summary>
+        /// Get the headset eye camera image texture
+        /// </summary>
+        public static Result<Texture2D> EyesTexture
+        {
+            get
+            {
+                if (!m_sEyeTextureUpdateRegistered)
+                {
+                    EnsureCapabilities(ResearchCapabilities.EyeImage);
+                    FoveManager.AddInUpdate += UpdateEyesImage;
+                    m_sEyeTextureUpdateRegistered = true;
+                }
+                return m_sEyesTexture;
+            }
+        }
 
-		private static Bitmap m_sEyesImage;
-		private static Bitmap m_sPositionImage;
+        /// <summary>
+        /// Get the position camera image texture
+        /// </summary>
+        public static Result<Texture2D> PositionTexture
+        {
+            get
+            {
+                if (!m_sPositionTextureUpdateRegistered)
+                {
+                    EnsureCapabilities(ResearchCapabilities.PositionImage);
+                    FoveManager.AddInUpdate += UpdatePositionImage;
+                    m_sPositionTextureUpdateRegistered = true;
+                }
+                return m_sPositionTexture;
+            }
+        }
 
-		private static HeadsetResearch m_sResearch;
+        /// <summary>
+        /// Get the texture displayed in the mirror client
+        /// </summary>
+        public static Result<Texture2D> MirrorTexture
+        {
+            get
+            {
+                if (!m_sMirrorTextureUpdateRegistered)
+                {
+                    EnsureInitialization();
+                    FoveManager.AddInUpdate += UpdateMirrorTexture;
+                    m_sMirrorTextureUpdateRegistered = true;
+                }
 
-		private static ResearchGaze m_sResearchGaze;
+                if (m_sMirrorTexture.value == null)
+                {
+                    IntPtr texPtr;
+                    int texWidth, texHeight;
+                    GetMirrorTexturePtr(out texPtr, out texWidth, out texHeight);
+                    if (texPtr != IntPtr.Zero) // the mirror texture doesn't exist yet
+                    {
+                        m_sMirrorTexture.value = Texture2D.CreateExternalTexture(texWidth, texHeight, TextureFormat.RGBA32, false, false, texPtr);
+                        m_sMirrorTexture.error = ErrorCode.None;
+                    }
+                }
 
-		public static Texture2D EyesTexture
-		{
-			get
-			{
-				EnsureInitialization();
-				return m_sEyesTexture;
-			}
-		}
+                return m_sMirrorTexture;
+            }
+        }
 
-		public static Texture2D PositionTexture
-		{
-			get
-			{
-				EnsureInitialization();
-				return m_sPositionTexture;
-			}
-		}
+        /// <summary>
+        /// Return the research gaze information.
+        /// </summary>
+        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
+        public static Result<ResearchGaze> GetResearchGaze(bool immediate = false)
+        {
+            if (!m_sGazeUpdateRegistered)
+            {
+                EnsureInitialization();
+                FoveManager.AddInUpdate += UpdateResearchGaze;
+                m_sGazeUpdateRegistered = true;
+            }
 
-		public static ResearchGaze GetResearchGaze(bool immediate = false)
-		{
-			EnsureInitialization();
+            if (immediate)
+                return m_sResearchGaze;
 
-			if (immediate)
-				return m_sResearchGaze;
+            ResearchGaze gaze;
+            var error = m_sResearch.GetGaze(out gaze);
+            return new Result<ResearchGaze>(gaze, error);
+        }
 
-			ResearchGaze gaze;
-			m_sResearch.GetGaze(out gaze);
-			return gaze;
-		}
+        /// <summary>
+        /// Return the eye outline points in pixels in the <see cref="GetEyesImage"/> .
+        /// </summary>
+        /// <remarks>This feature requires a license</remarks>
+        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
+        public static Result<Stereo<EyeShape>> GetEyeShapes(bool immediate = false)
+        {
+            if (!m_sEyeShapesUpdateRegistered)
+            {
+                EnsureInitialization();
+                FoveManager.Headset.RegisterCapabilities(ClientCapabilities.Gaze);
+                FoveManager.AddInUpdate += UpdateEyeShapes;
+                m_sEyeShapesUpdateRegistered = true;
+            }
 
-		private static void AcceptAddIn(Headset headset)
-		{
-			m_sResearch = headset.GetResearchHeadset(ResearchCapabilities.EyeImage | ResearchCapabilities.PositionImage);
-		}
+            if (immediate)
+                return m_sEyeShapes;
 
-		private static void EnsureInitialization()
-		{
-			if (m_sResearch != null)
-				return;
+            Fove.EyeShape shapeL, shapeR;
+            var error = m_sResearch.GetEyeShapes(out shapeL, out shapeR);
+            if (error != ErrorCode.None)
+                return new Result<Stereo<EyeShape>>(m_sEyeShapes);
 
-			AcceptAddIn(FoveManager.Headset);
-			FoveManager.AddInUpdate += UpdateImages;
-			m_sEyesTexture = null;
-			m_sPositionTexture = null;
-
-			m_sResearch.RegisterCapabilities(ResearchCapabilities.EyeImage | ResearchCapabilities.PositionImage);
-		}
-
-		private delegate ErrorCode GetImageDelegate(out Bitmap img);
-
-		private static GetImageDelegate GetEyesImage = (out Bitmap img) => m_sResearch.GetImage(ImageType.StereoEye, out img);
-		private static GetImageDelegate GetPositionImage = (out Bitmap img) => m_sResearch.GetImage(ImageType.Position, out img);
-
-		private static void TryUpdatingTexture(GetImageDelegate func, ref Bitmap bimg, ref Texture2D tex)
-		{
-			try {
-				Bitmap temp;
-				var err = func(out temp);
-
-				if (err == ErrorCode.None)
-				{
-					if (bimg != null && temp.Timestamp <= bimg.Timestamp)
-						return;
-					bimg = temp;
-
-					if (bimg.Width == 0 || bimg.Height == 0)
-					{
-						return;
-					}
-
-					if (tex != null && (tex.width != bimg.Width || tex.height != bimg.Height))
-					{
-						Texture2D.Destroy(tex);
-						tex = null;
-					}
-
-					if (tex == null)
-						tex = new Texture2D(bimg.Width, bimg.Height, TextureFormat.RGB24, false);
-
-					tex.LoadRawTextureData(bimg.ImageData.data, (int)bimg.ImageData.length);
-					tex.Apply();
-				}
-				else
-				{
-					//... log?
-				}
-			}
-			catch (Exception e)
-			{
-				Debug.Log("Error trying to load eyes image bitmap: " + e);
-			}
-		}
-
-		private static void UpdateImages()
-		{
-			m_sResearchGaze = GetResearchGaze(true);
-			TryUpdatingTexture(GetEyesImage, ref m_sEyesImage, ref m_sEyesTexture);
-			TryUpdatingTexture(GetPositionImage, ref m_sPositionImage, ref m_sPositionTexture);
-		}
-	}
+            var eyeShapes = new Stereo<EyeShape>((EyeShape)shapeL, (EyeShape)shapeR);
+            return new Result<Stereo<EyeShape>>(eyeShapes);
+        }
+    }
 }

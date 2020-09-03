@@ -1,5 +1,41 @@
 # FOVE Unity Plugin Changelog
 
+## 3.2.0
+* All Fove APIs now return a `Result` structure containing both the return value as well as an error code.
+* Introduce and use the `Stereo` type for all function returning left and right eye data.
+* Add the `GazableObject` component and other gaze object detection related APIs
+* Fove native Warning/Error logs now appear in the Unity console with suffix `[FOVE]`
+* Changed the prefabs camera FOV to match the one of the HMD (this has an impact only when using a custom view for the desktop window).
+* Add xml documentation file `FoveClient_CLR.xml`. Documentation for Fove types can now be seen directly from Visual Studio assembly explorer.
+* `FoveManager` class:
+    * Add new calibration APIs: `StartEyeTrackingCalibration`, `StopEyeTrackingCalibration`, `GetEyeTrackingCalibrationState`, `TickEyeTrackingCalibration`
+    * Remove `EnsureEyeTrackingCalibration`, use `StartEyeTrackingCalibration` with calibration `lazy` option instead.
+    * Add the `GetGazedObject` function. It returns the registered scene object currently gazed.
+    * Add `RegisterCapabilities` and `UnregisterCapabilities` functions to manually register HMD capabilities.
+    * Add event callbacks for `HardwareConnected`, `HardwareDisconnected`, `HardwareReady`, `CalibrationStarted`, `CalibrationEnded`, `IsGazeFixatedChange` and `EyesClosedChanged` events.
+    * Add yield instructions `WaitForHardwareConnected`, `WaitForHardwareDisconnected`, `WaitForHardwareReady`, `WaitForEyeTrackingCalibrationStart`, `WaitForEyeTrackingCalibrationEnd` and `WaitForEyeTrackingCalibrated`
+    * Add the Profile APIs to be able to manage user calibration profiles from the app.
+    * Add the `IsUserPresent` function allowing to check if the user is wearing the headset or not
+    * Add the `IsHmdAdjustmentGuiVisible` function allowing to check if the headset adjustment is being displayed to the user.
+    * Make the `RenderScale` and `WorldScale` properties static
+    * Merge the `GetLeftEyeVector` and `GetRightEyeVector` functions into a single `GetEyeVectors` function
+    * Merge the `GetLeftEyeOffset` and `GetLeftEyeOffset` functions into a single `GetEyeOffsets` function
+* `FoveInterface` class:
+    * Add the `registerCameraObject` property to enable or disable automatic camera object registration
+    * Add the `RegisterCameraObject`, `UpdateCameraObject` and `RemoveCameraObject` functions for manual camera object management.
+    * Add the possibility to change `FoveInterface.TimewarpDisabled` at runtime
+    * Remove obsolete `FadingDisabled` and `DistortionDisabled` properties.
+    * Remove the `GazeCastPolicy` property and move it to the fove Settings.
+    * `GetGazeRays` return type changed from `EyeRays` to `Stere<Ray>`
+* `FoveResearch` class:
+    * Add the `MirrorTexture` property. It returns the same texture as displayed in the mirror client.
+    * Add `GetEyeShapes` function. It return current user eye shapes
+    * Optimize capability registration and image data update
+* Calibration:
+    * Add eye-by-eye calibration (possibility to calibrate each eye separately)
+    * Add 1-Point calibration method
+    * User application can now render the calibration process
+
 ## 3.1.2
 * Fix support for custom post effects using the `OnRenderImage` method
 * Add support for UI canvas using render mode `Screen space - camera`

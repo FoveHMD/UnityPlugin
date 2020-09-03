@@ -6,7 +6,49 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Tests/Calibration/CalibrationTest.unity
+  - enabled: 1
+    path: Assets/Tests/Capabilities/CapabilitiesScene.unity
+  - enabled: 1
+    path: Assets/Tests/CompositorOptions/CompositorOptionTests.unity
+  - enabled: 1
+    path: Assets/Tests/EyeShapes/EyeShapesTest.unity
+  - enabled: 1
+    path: Assets/Tests/GazeObjectDetection/1_FixedObjects.unity
+  - enabled: 1
+    path: Assets/Tests/GazeObjectDetection/10_CameraMovement.unity
+  - enabled: 1
+    path: Assets/Tests/GazeObjectDetection/11_RigitBody.unity
+  - enabled: 1
+    path: Assets/Tests/GazeObjectDetection/2_AnimatedObjects.unity
+  - enabled: 1
+    path: Assets/Tests/GazeObjectDetection/3_MultiCollider.unity
+  - enabled: 1
+    path: Assets/Tests/GazeObjectDetection/4_PrefabInstantiation.unity
+  - enabled: 1
+    path: Assets/Tests/GazeObjectDetection/5_DepthTests.unity
+  - enabled: 1
+    path: Assets/Tests/GazeObjectDetection/6_MultiCamera&Mask.unity
+  - enabled: 1
+    path: Assets/Tests/GazeObjectDetection/7_PerformanceTests.unity
+  - enabled: 1
+    path: Assets/Tests/GazeObjectDetection/8a_MultiScenes (start).unity
+  - enabled: 1
+    path: Assets/Tests/GazeObjectDetection/8b_MultiScenes.unity
+  - enabled: 1
+    path: Assets/Tests/GazeObjectDetection/8c_MultiScenes.unity
+  - enabled: 1
+    path: Assets/Tests/GazeObjectDetection/9_AmbiguityResolving.unity
+  - enabled: 1
+    path: Assets/Tests/GazeRecording/RecordingScene.unity
+  - enabled: 1
     path: Assets/Tests/main.unity
+  - enabled: 1
+    path: Assets/Tests/PostEffects/PostEffectTestScene.unity
+  - enabled: 1
+    path: Assets/Tests/ResearchGaze/GazeResearchTest.unity
+  - enabled: 1
+    path: Assets/Tests/ResearchTextures/ResearchTextures.unity
   - enabled: 1
     path: Assets/Tests/SceneTransitions/0 - LoadSync (test start).unity
   - enabled: 1
@@ -17,3 +59,7 @@ EditorBuildSettings:
     path: Assets/Tests/SceneTransitions/3 - LoadAsyncAdditive.unity
   - enabled: 1
     path: Assets/Tests/SceneTransitions/4 - ExtraFoveInterface.unity
+  - enabled: 1
+    path: Assets/Tests/StereoProjection/StereoProjection.unity
+  - enabled: 1
+    path: Assets/Tests/UI/UITests.unity

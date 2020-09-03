@@ -1,0 +1,2708 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FoveClient_CLR</name>
+    </assembly>
+    <members>
+        <member name="T:Fove.Bitmap">
+            <summary>
+            Represent a plain bitmap image
+            </summary>
+        </member>
+        <member name="P:Fove.Bitmap.Width">
+            <summary>
+            The width of the bitmap image in pixels
+            </summary>
+        </member>
+        <member name="P:Fove.Bitmap.Height">
+            <summary>
+            The height of the bitmap image in pixels
+            </summary>
+        </member>
+        <member name="P:Fove.Bitmap.Timestamp">
+            <summary>
+            Timestamp of the image, in microseconds since an unspecified epoch
+            </summary>
+        </member>
+        <member name="P:Fove.Bitmap.Type">
+            <summary>
+            Type of the bitmap for disambiguation
+            </summary>
+        </member>
+        <member name="P:Fove.Bitmap.ImageData">
+            <summary>
+            The image data without the bitmap header
+            </summary>
+        </member>
+        <member name="P:Fove.Bitmap.Data">
+            <summary>
+            The complete bitmap data (including the header).
+            </summary>
+        </member>
+        <member name="T:Fove.Compositor">
+            <summary>
+            This class is a wrapper around the C API's Fove_Compositor.
+            It is the main way to draw content to a headset.
+            </summary>
+        </member>
+        <member name="M:Fove.Compositor.Finalize">
+            <summary>
+            Dispose native resources and destroy the compositor wrapper
+            </summary>
+        </member>
+        <member name="M:Fove.Compositor.CreateLayer(Fove.CompositorLayerCreateInfo,Fove.CompositorLayer@)">
+            <summary>
+            Creates a new layer within the compositor
+            <para>
+            This function create a layer upon which frames may be submitted to the compositor by this client.
+            </para>
+            <para>
+            A connection to the compositor must exists for this to pass.
+            This means you need to wait for fove_Compositor_isReady before calling this function.
+            However, if connection to the compositor is lost and regained, this layer will persist.
+            For this reason, you should not recreate your layers upon reconnection, simply create them once.
+            </para>
+            <para>
+            There is no way to delete a layer once created, other than to destroy the Fove_Compositor object.
+            This is a feature we would like to add in the future.
+            </para>
+            </summary>
+            <param name="layerInfo">The settings for the layer to be created</param>
+            <param name="layer">A struct where the defaults of the newly created layer will be written</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+            <seealso cref="M:Fove.Compositor.Submit(Fove.CompositorLayerSubmitInfo@)"/>
+        </member>
+        <member name="M:Fove.Compositor.Submit(Fove.CompositorLayerSubmitInfo@)">
+            <summary>
+            Submit a frame to the compositor.
+            <para>This function takes the feed from your game engine to the compositor for output.</para>
+            </summary>
+            <param name="layer">Layer information for the layer to submit</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+            <seealso cref="M:Fove.Compositor.CreateLayer(Fove.CompositorLayerCreateInfo,Fove.CompositorLayer@)"/>
+        </member>
+        <member name="M:Fove.Compositor.WaitForRenderPose(Fove.Pose@)">
+            <summary>
+            Wait for the most recent pose for rendering purposes.
+            <para>
+            All compositor clients should use this function as the sole means of limiting their frame rate.
+            This allows the client to render at the correct frame rate for the HMD display.
+            Upon this function returning, the client should proceed directly to rendering, 
+            to reduce the chance of missing the frame. If outPose is not null, 
+            this function will return the latest pose as a convenience to the caller.
+            </para>
+            </summary>
+            <example>
+            In general, a client's main loop should look like:
+            <code>
+            Update();                                // Run AI, physics, etc, for the next frame
+            compositor.WaitForRenderPose(out pose);  // Wait for the next frame, and get the pose
+            Draw(pose);                              // Render the scene using the new pose
+            </code>
+            </example>
+            <param name="pose">The latest pose of the headset.</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Compositor.GetLastRenderPose(Fove.Pose@)">
+            <summary>
+            Get the last cached pose for rendering purposes
+            </summary>
+            <param name="pose">The last cached pose</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Compositor.IsReady">
+            <summary>
+            Get the ready state of the compositor
+            </summary>
+            <returns>True if we are connected to a running compositor and ready to submit frames for compositing</returns>
+        </member>
+        <member name="M:Fove.Compositor.GetAdapterId(Fove.AdapterId@)">
+            <summary>
+            Returns the ID of the GPU currently attached to the headset
+            <para>For systems with multiple GPUs, submitted textures to the compositor must 
+            from the same GPU that the compositor is using</para>
+            </summary>
+            <param name="adapterId">The ID of the adapter</param>
+            <returns>True if we are connected to a running compositor and ready to submit frames for compositing</returns>
+        </member>
+        <member name="M:Fove.Compositor.Dispose">
+            <summary>
+            Destroy native compositor
+            </summary>
+        </member>
+        <member name="T:Fove.FoveConfig">
+            <summary>
+            This is a wrapper around the fove_Config C's APIs
+            </summary>
+        </member>
+        <member name="M:Fove.FoveConfig.GetValue(System.String,System.Boolean@)">
+            <summary>
+            Get the value of the provided key from the FOVE config
+            </summary>
+            <param name="key">The key name of the value to retrieve</param>
+            <param name="value">The value associated to the key if found</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully retrieved</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
+            <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the queried key doesn't exist</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not a boolean</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.FoveConfig.GetValue(System.String,System.Int32@)">
+            <summary>
+            Get the value of the provided key from the FOVE config
+            </summary>
+            <param name="key">The key name of the value to retrieve</param>
+            <param name="value">The value associated to the key if found</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully retrieved</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
+            <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the queried key doesn't exist</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not an int</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.FoveConfig.GetValue(System.String,System.Single@)">
+            <summary>
+            Get the value of the provided key from the FOVE config
+            </summary>
+            <param name="key">The key name of the value to retrieve</param>
+            <param name="value">The value associated to the key if found</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully retrieved</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
+            <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the queried key doesn't exist</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not a float</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.FoveConfig.GetValue(System.String,System.String@)">
+            <summary>
+            Get the value of the provided key from the FOVE config
+            </summary>
+            <param name="key">The key name of the value to retrieve</param>
+            <param name="value">The value associated to the key if found</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully retrieved</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
+            <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the queried key doesn't exist</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not a string</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.FoveConfig.SetValue(System.String,System.Boolean)">
+            <summary>
+            Set the value of the provided key to the FOVE config
+            </summary>
+            <param name="key">The key name of the value to set</param>
+            <param name="value">The new value to set as the key value</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully set</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
+            <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the provided key doesn't exist</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not a boolean</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.FoveConfig.SetValue(System.String,System.Int32)">
+            <summary>
+            Set the value of the provided key to the FOVE config
+            </summary>
+            <param name="key">The key name of the value to set</param>
+            <param name="value">The new value to set as the key value</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully set</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
+            <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the provided key doesn't exist</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not an int</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.FoveConfig.SetValue(System.String,System.Single)">
+            <summary>
+            Set the value of the provided key to the FOVE config
+            </summary>
+            <param name="key">The key name of the value to set</param>
+            <param name="value">The new value to set as the key value</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully set</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
+            <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the provided key doesn't exist</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not a float</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.FoveConfig.SetValue(System.String,System.String)">
+            <summary>
+            Set the value of the provided key to the FOVE config
+            </summary>
+            <param name="key">The key name of the value to set</param>
+            <param name="value">The new value to set as the key value</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully set</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
+            <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the provided key doesn't exist</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not a string</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.FoveConfig.ClearValue(System.String)">
+            <summary>
+            Reset the value of the provided key to its default value
+            </summary>
+            <param name="key">The key name of the value to reset</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully reset</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
+            <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the provided key doesn't exist</item>
+            </list>
+            </returns>
+        </member>
+        <member name="T:Fove.ClientCapabilities">
+            <summary>
+            List of capabilities usable by clients
+            <para>
+            Most features require registering for the relevant capability.
+            If a client queries data related to a capability it has not registered API_NotRegistered will be returned.
+            </para>
+            <para>This enum is designed to be used as a flag set, so items may be binary logic operators like |.</para>
+            <para>The FOVE runtime will keep any given set of hardware/software running so long as one client is registering a capability.</para>
+            <para>
+            The registration of a capability does not necessarily mean that the capability is running.
+            For example, if no position tracking camera is attached, no position tracking will occur regardless of how many clients registered for it.</para>
+            </summary>
+        </member>
+        <member name="F:Fove.ClientCapabilities.None">
+            <summary>
+            No capabilities requested
+            </summary>
+        </member>
+        <member name="F:Fove.ClientCapabilities.Gaze">
+            <summary>
+            Enables eye tracking
+            </summary>
+        </member>
+        <member name="F:Fove.ClientCapabilities.Orientation">
+            <summary>
+            Enables headset orientation tracking
+            </summary>
+        </member>
+        <member name="F:Fove.ClientCapabilities.Position">
+            <summary>
+            Enables headset position tracking
+            </summary>
+        </member>
+        <member name="T:Fove.ErrorCode">
+            <summary>
+            The error codes that the Fove system may return
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.None">
+            <summary>
+            Indicates that no error occurred
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Connect_NotConnected">
+            <summary>
+            The client lost the connection with the Fove service
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.API_General">
+            <summary>
+            There was an error in the usage of the API other than one of the others in this section
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.API_InitNotCalled">
+            <summary>
+            A function that should only be called after Initialise() was invoked before/without Initialise()
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.API_InitAlreadyCalled">
+            <summary>
+            A function that should only be called before Initialise() was invoked, or Initialise() was invoked multiple times
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.API_InvalidArgument">
+            <summary>
+            An argument passed to an API function was invalid for a reason other than one of the below reasons
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.API_NotRegistered">
+            <summary>
+            Data was queried without first registering for that data
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.API_NullInPointer">
+            <summary>
+            An input argument passed to an API function was invalid for a reason other than the below reasons
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.API_InvalidEnumValue">
+            <summary>
+            An enum argument passed to an API function was invalid
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.API_NullOutPointersOnly">
+            <summary>
+            All output arguments were null on a function that requires at least one output (all getters that have no side effects)
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.API_OverlappingOutPointers">
+            <summary>
+            Two (or more) output parameters passed to an API function overlap in memory. 
+            Each output parameter should be a unique, separate object.
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.API_CompositorNotSwapped">
+            <summary>
+            This comes from submitting without calling WaitForRenderPose after a complete submit.
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.API_Timeout">
+            <summary>
+            A call to an API could not be completed within a timeout.
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Compositor_UnableToCreateDeviceAndContext">
+            <summary>
+            Compositor was unable to initialize its backend component.
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Compositor_UnableToUseTexture">
+            <summary>
+            Compositor was unable to use the given texture (likely due to mismatched client and data types or an incompatible format).
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Compositor_DeviceMismatch">
+            <summary>
+            Compositor was unable to match its device to the texture's, either because of multiple GPUs or a failure to get the device from the texture.
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Compositor_IncompatibleCompositorVersion">
+            <summary>
+            Compositor client is not compatible with the currently running compositor.
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Compositor_UnableToFindRuntime">
+            <summary>
+            Compositor isn't running or isn't responding.
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Compositor_DisconnectedFromRuntime">
+            <summary>
+            Compositor was running and is no longer responding.
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Compositor_ErrorCreatingTexturesOnDevice">
+            <summary>
+            Failed to create shared textures for compositor.
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Compositor_NoEyeSpecifiedForSubmit">
+            <summary>
+            The supplied Eye for submit is invalid (i.e. is Both or Neither).
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.UnknownError">
+            <summary>
+            Errors that are unknown or couldn't be classified. 
+            If possible, info will be logged about the nature of the issue.
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Object_AlreadyRegistered">
+            <summary>
+            The scene object that you attempted to register was already present in the object registry
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Calibration_OtherRendererPrioritized">
+            <summary>
+            Another renderer registered to render the calibration process have a higher priority than current process.
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.License_FeatureAccessDenied">
+            <summary>
+            You don't have the license rights to use the corresponding feature
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Profile_DoesntExist">
+            <summary>
+            The profile doesn't exist
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Profile_NotAvailable">
+            <summary>
+            The profile already exists when it shouldn't, or is otherwise taken or not available
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Profile_InvalidName">
+            <summary>
+            The profile name is not a valid name
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Config_DoesntExist">
+            <summary>
+            The provided key doesn't exist in the config
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.Config_TypeMismatch">
+            <summary>
+            The value type of the key doesn't match
+            </summary>
+        </member>
+        <member name="T:Fove.ObjectGroup">
+            <summary>
+            The group of object of the scene
+            </summary>
+        </member>
+        <member name="T:Fove.GazeCastPolicy">
+            <summary>
+            Specify when user gaze casts should be dismissed based on his eyes openness
+            </summary>
+        </member>
+        <member name="F:Fove.GazeCastPolicy.DismissBothEyeClosed">
+            <summary>
+            Dismiss the gaze cast only if both eyes of the eye are closed.
+            </summary>
+        </member>
+        <member name="F:Fove.GazeCastPolicy.DismissOneEyeClosed">
+            <summary>
+            Dismiss the gaze cast as soon as one of the user's eye is closed.
+            </summary>
+        </member>
+        <member name="F:Fove.GazeCastPolicy.NeverDismiss">
+            <summary>
+            Never dismiss the user gaze cast. This can be useful especially for debugging.
+            </summary>
+        </member>
+        <member name="T:Fove.CompositorLayerType">
+            <summary>
+            Compositor layer type, which defines how clients are composited
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerType.Base">
+            <summary>
+            The first and main application layer
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerType.Overlay">
+            <summary>
+            Layer over the base layer
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerType.Diagnostic">
+            <summary>
+            Layer over Overlay layer
+            </summary>
+        </member>
+        <member name="T:Fove.Versions">
+            <summary>
+            Struct to list various version info about the FOVE software
+            <para>
+            Contains the version for the software (both runtime and client versions).
+            A negative value in any int field represents unknown.
+            </para>
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.clientMajor">
+            <summary>
+            The major version number of the client library
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.clientMinor">
+            <summary>
+            The minor version number of the client library
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.clientBuild">
+            <summary>
+            The build version number of the client library
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.clientProtocol">
+            <summary>
+            The version of the communication protocol the client is using
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.runtimeMajor">
+            <summary>
+            The major version number of the fove service
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.runtimeMinor">
+            <summary>
+            The minor version number of the fove service
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.runtimeBuild">
+            <summary>
+            The build version number of the fove service
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.firmware">
+            <summary>
+            The firmware version number
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.maxFirmware">
+            <summary>
+            Indicate the highest compatible firmware version.
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.minFirmware">
+            <summary>
+            Indicate the lowest compatible firmware version.
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.tooOldHeadsetConnected">
+            <summary>
+            Indicate whether the connected headset is too old or not
+            </summary>
+        </member>
+        <member name="T:Fove.HeadsetHardwareInfo">
+            <summary>
+            Struct Contains hardware information for the headset
+            <para>
+            Contains the serial number, manufacturer and model name for the headset.
+            Values of the member fields originates from their UTF-8 string representations
+            defined by headset manufacturers, and passed to us (FoveClient) by FoveService
+            server through an IPC message.
+            The server may be sending very long strings, but the FoveClient library will
+            be truncating them in an unspecified manner to 0-terminated strings of length
+            at most 256.
+            </para>
+            </summary>
+        </member>
+        <member name="F:Fove.HeadsetHardwareInfo.serialNumber">
+            <summary>
+            Serial number, as a null-terminated UTF8 string
+            </summary>
+        </member>
+        <member name="F:Fove.HeadsetHardwareInfo.manufacturer">
+            <summary>
+            Manufacturer info, as a null-terminated UTF8 string
+            </summary>
+        </member>
+        <member name="F:Fove.HeadsetHardwareInfo.modelName">
+            <summary>
+            Model name, as a null-terminated UTF8 string
+            </summary>
+        </member>
+        <member name="T:Fove.Quat">
+            <summary>
+            Struct representation on a quaternion
+            <para>A quaternion represents an orientation in 3D space.</para>
+            </summary>
+        </member>
+        <member name="F:Fove.Quat.x">
+            <summary>
+            X component of the quaternion
+            </summary>
+        </member>
+        <member name="F:Fove.Quat.y">
+            <summary>
+            Y component of the quaternion
+            </summary>
+        </member>
+        <member name="F:Fove.Quat.z">
+            <summary>
+            Z component of the quaternion
+            </summary>
+        </member>
+        <member name="F:Fove.Quat.w">
+            <summary>
+            W component of the quaternion
+            </summary>
+        </member>
+        <member name="M:Fove.Quat.#ctor(System.Single,System.Single,System.Single,System.Single)">
+            <summary>
+            Construct a new quaternion from the given values
+            </summary>
+        </member>
+        <member name="F:Fove.Quat.Identity">
+            <summary>
+            An identity quaternion
+            </summary>
+        </member>
+        <member name="T:Fove.Vec3">
+            <summary>
+            Struct to represent a 3D-vector
+            <para>A vector that represents an position in 3D space.</para>
+            </summary>
+        </member>
+        <member name="F:Fove.Vec3.x">
+            <summary>
+            X component of the vector
+            </summary>
+        </member>
+        <member name="F:Fove.Vec3.y">
+            <summary>
+            Y component of the vector
+            </summary>
+        </member>
+        <member name="F:Fove.Vec3.z">
+            <summary>
+            Z component of the vector
+            </summary>
+        </member>
+        <member name="M:Fove.Vec3.#ctor(System.Single,System.Single,System.Single)">
+            <summary>
+            Construct a new vector from the given values
+            </summary>
+        </member>
+        <member name="F:Fove.Vec3.Zero">
+            <summary>
+            A null vector
+            </summary>
+        </member>
+        <member name="T:Fove.Vec2">
+            <summary>
+            Struct to represent a 2D-vector
+            <para>A vector that represents a position or orientation in 2D space, such as screen or image coordinates.</para>
+            </summary>
+        </member>
+        <member name="F:Fove.Vec2.x">
+            <summary>
+            X component of the vector
+            </summary>
+        </member>
+        <member name="F:Fove.Vec2.y">
+            <summary>
+            Y component of the vector
+            </summary>
+        </member>
+        <member name="M:Fove.Vec2.#ctor(System.Single,System.Single)">
+            <summary>
+            Construct a new vector from the given values
+            </summary>
+        </member>
+        <member name="F:Fove.Vec2.Zero">
+            <summary>
+            A null vector
+            </summary>
+        </member>
+        <member name="T:Fove.Vec2i">
+            <summary>
+            Struct to represent a 2D-vector of integers
+            </summary>
+        </member>
+        <member name="F:Fove.Vec2i.x">
+            <summary>
+            X component of the vector
+            </summary>
+        </member>
+        <member name="F:Fove.Vec2i.y">
+            <summary>
+            Y component of the vector
+            </summary>
+        </member>
+        <member name="M:Fove.Vec2i.#ctor(System.Int32,System.Int32)">
+            <summary>
+            Construct a new vector from the given values
+            </summary>
+        </member>
+        <member name="F:Fove.Vec2i.Zero">
+            <summary>
+            A null vector
+            </summary>
+        </member>
+        <member name="T:Fove.EyeRay">
+            <summary>
+            Struct to represent an eye Ray
+            <para>Stores the start point and direction of a Ray</para>
+            </summary>
+        </member>
+        <member name="F:Fove.EyeRay.origin">
+            <summary>
+            The start point of the Ray
+            </summary>
+        </member>
+        <member name="F:Fove.EyeRay.direction">
+            <summary>
+            The direction of the Ray
+            </summary>
+        </member>
+        <member name="T:Fove.Pose">
+            <summary>
+            Struct to represent a combination of position and orientation of Fove Headset
+            <para>
+            This structure is a combination of the Fove headset position and orientation in 3D space, collectively known as the "pose".
+            In the future this may also contain acceleration information for the headset, and may also be used for controllers.
+            </para>
+            </summary>
+        </member>
+        <member name="F:Fove.Pose.id">
+            <summary>
+            Incremental counter which tells if the coord captured is a fresh value at a given frame
+            </summary>
+        </member>
+        <member name="F:Fove.Pose.timestamp">
+            <summary>
+            The time at which the pose was captured, in microseconds since an unspecified epoch
+            </summary>
+        </member>
+        <member name="F:Fove.Pose.orientation">
+            <summary>
+            The Quaternion which represents the orientation of the head
+            </summary>
+        </member>
+        <member name="F:Fove.Pose.angularVelocity">
+            <summary>
+            The angular velocity of the head
+            </summary>
+        </member>
+        <member name="F:Fove.Pose.angularAcceleration">
+            <summary>
+            The angular acceleration of the head
+            </summary>
+        </member>
+        <member name="F:Fove.Pose.position">
+            <summary>
+            The position of headset in 3D space. Tares to (0, 0, 0). Use for sitting applications
+            </summary>
+        </member>
+        <member name="F:Fove.Pose.standingPosition">
+            <summary>
+            The position of headset including offset for camera location. Will not tare to zero. Use for standing applications
+            </summary>
+        </member>
+        <member name="F:Fove.Pose.velocity">
+            <summary>
+            The velocity of headset in 3D space
+            </summary>
+        </member>
+        <member name="F:Fove.Pose.acceleration">
+            <summary>
+            The acceleration of headset in 3D space
+            </summary>
+        </member>
+        <member name="F:Fove.Pose.Null">
+            <summary>
+            A null pose
+            </summary>
+        </member>
+        <member name="T:Fove.GazeVector">
+            <summary>
+            Struct to represent a unit vector out from the eye center along which that eye is looking
+            <para>
+            The vector value is in eye-relative coordinates, meaning that it is not affected by the position
+            or orientation of the HMD, but rather represents the absolute orientation of the eye's gaze.
+            </para>
+            </summary>
+        </member>
+        <member name="F:Fove.GazeVector.id">
+            <summary>
+            Incremental counter which tells if the convergence data is a fresh value at a given frame
+            </summary>
+        </member>
+        <member name="F:Fove.GazeVector.timestamp">
+            <summary>
+            The time at which the gaze data was captured, in microseconds since an unspecified epoch
+            </summary>
+        </member>
+        <member name="F:Fove.GazeVector.vector">
+            <summary>
+            Directional vector of the gaze
+            </summary>
+        </member>
+        <member name="T:Fove.GazeConvergenceData">
+            <summary>
+            Struct to represent the vector pointing where the user is looking at
+            <para>
+            The vector (from the center of the player's head in world space) 
+            that can be used to approximate the point that the user is looking at.
+            </para>
+            </summary>
+        </member>
+        <member name="F:Fove.GazeConvergenceData.id">
+            <summary>
+            Incremental counter which tells if the convergence data is a fresh value at a given frame
+            </summary>
+        </member>
+        <member name="F:Fove.GazeConvergenceData.timestamp">
+            <summary>
+            The time at which the convergence data was captured, in microseconds since an unspecified epoch
+            </summary>
+        </member>
+        <member name="F:Fove.GazeConvergenceData.ray">
+            <summary>
+            The ray pointing towards the expected convergence point
+            </summary>
+        </member>
+        <member name="F:Fove.GazeConvergenceData.distance">
+            <summary>
+            The expected distance to the convergence point, Range: 0 to Infinity
+            </summary>
+        </member>
+        <member name="F:Fove.GazeConvergenceData.pupilDilation">
+            <summary>
+            Pupil dilation is given as a ratio relative to a baseline. 1 means average. Range: 0 to Infinity
+            </summary>
+        </member>
+        <member name="F:Fove.GazeConvergenceData.attention">
+            <summary>
+            True if the user is looking at something (fixation or pursuit), rather than saccading between objects. This could be used to suppress eye input during large eye motions
+            </summary>
+        </member>
+        <member name="F:Fove.GazeConvergenceData.gazedObjectId">
+            <summary>
+            Id of the object being gazed at, as registered via `fove_Headset_registerGazableObject()`. Values at or below zero are reserved
+            </summary>
+        </member>
+        <member name="T:Fove.LogLevel">
+            <summary>
+            Severity level of log messages
+            </summary>
+        </member>
+        <member name="F:Fove.LogLevel.Debug">
+            <summary>
+            Debug information
+            </summary>
+        </member>
+        <member name="F:Fove.LogLevel.Warning">
+            <summary>
+            An issue requiring attention 
+            </summary>
+        </member>
+        <member name="F:Fove.LogLevel.Error">
+            <summary>
+            An unexpected error
+            </summary>
+        </member>
+        <member name="T:Fove.Eye">
+            <summary>
+            Enum to identify which eye is being used
+            <para>
+            This is usually returned with any eye tracking information and tells the client which eye(s) the information is based on.
+            </para>
+            </summary>
+        </member>
+        <member name="F:Fove.Eye.Neither">
+            <summary>
+            Neither eye
+            </summary>
+        </member>
+        <member name="F:Fove.Eye.Left">
+            <summary>
+            Left eye only
+            </summary>
+        </member>
+        <member name="F:Fove.Eye.Right">
+            <summary>
+            Right eye only
+            </summary>
+        </member>
+        <member name="F:Fove.Eye.Both">
+            <summary>
+            Both eyes
+            </summary>
+        </member>
+        <member name="T:Fove.Matrix44">
+            <summary>
+            Struct to hold a rectangular array
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m00">
+            <summary>
+            [r=0, c=0] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m10">
+            <summary>
+            [r=1, c=0] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m20">
+            <summary>
+            [r=2, c=0] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m30">
+            <summary>
+            [r=3, c=0] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m01">
+            <summary>
+            [r=0, c=1] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m11">
+            <summary>
+            [r=1, c=1] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m21">
+            <summary>
+            [r=2, c=1] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m31">
+            <summary>
+            [r=3, c=1] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m02">
+            <summary>
+            [r=0, c=2] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m12">
+            <summary>
+            [r=1, c=2] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m22">
+            <summary>
+            [r=2, c=2] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m32">
+            <summary>
+            [r=3, c=2] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m03">
+            <summary>
+            [r=0, c=3] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m13">
+            <summary>
+            [r=1, c=3] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m23">
+            <summary>
+            [r=2, c=3] element of the matrix
+            </summary>
+        </member>
+        <member name="F:Fove.Matrix44.m33">
+            <summary>
+            [r=3, c=3] element of the matrix
+            </summary>
+        </member>
+        <member name="T:Fove.ProjectionParams">
+            <summary>
+            Struct holding information about projection frustum planes
+            <para>Values are given for a depth of 1 so that it's easy to multiply them by your near clipping plan, 
+            for example, to get the correct values for your use.</para>
+            </summary>
+        </member>
+        <member name="F:Fove.ProjectionParams.left">
+            <summary>
+            Left side (low-X)
+            </summary>
+        </member>
+        <member name="F:Fove.ProjectionParams.right">
+            <summary>
+            Right side (high-X)
+            </summary>
+        </member>
+        <member name="F:Fove.ProjectionParams.top">
+            <summary>
+            Top (high-Y)
+            </summary>
+        </member>
+        <member name="F:Fove.ProjectionParams.bottom">
+            <summary>
+            Bottom (low-Y)
+            </summary>
+        </member>
+        <member name="T:Fove.ObjectPose">
+            <summary>
+            Represents the pose of an object of the scene
+            <para>Pose transformations are applied in the following order on the object: scale, rotation, translation</para>
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectPose.scale">
+            <summary>
+            The scale of the object
+            <para>Non-uniform scales are not supported for sphere collider shapes.</para>
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectPose.rotation">
+            <summary>
+            The rotation of the object in world space
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectPose.position">
+            <summary>
+            The position of the object in world space
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectPose.velocity">
+            <summary>
+            The velocity of the object in world space
+            </summary>
+        </member>
+        <member name="T:Fove.BoundingBox">
+            <summary>
+            A bounding box
+            </summary>
+        </member>
+        <member name="F:Fove.BoundingBox.center">
+            <summary>
+            The position of the center of the bounding box
+            </summary>
+        </member>
+        <member name="F:Fove.BoundingBox.extend">
+            <summary>
+            The extend of the bounding box (e.g. half of its size)
+            </summary>
+        </member>
+        <member name="T:Fove.ObjectCollider">
+            <summary>
+            Represents a colliding part of a gazable object
+            <para>Colliders are used to calculate intersection between gaze rays and gazable objects</para>
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.center">
+            <summary>
+            The offset of the collider center collider raw shape
+            </summary>
+        </member>
+        <member name="T:Fove.ObjectCollider.ColliderType">
+            <summary>
+            Native collider types
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.ColliderType.Cube">
+            <summary>
+            A collider defined by a cube
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.ColliderType.Sphere">
+            <summary>
+            A collider defined by a sphere
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.ColliderType.Mesh">
+            <summary>
+            A collider defined by a 3D mesh
+            </summary>
+        </member>
+        <member name="T:Fove.ObjectCollider.ColliderCube">
+            <summary>
+            Native collider cube structure
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.ColliderCube.size">
+            <summary>
+            The size of the cube
+            </summary>
+        </member>
+        <member name="T:Fove.ObjectCollider.ColliderSphere">
+            <summary>
+            Native collider sphere structure
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.ColliderSphere.radius">
+            <summary>
+            The radius of the sphere
+            </summary>
+        </member>
+        <member name="T:Fove.ObjectCollider.ColliderMesh">
+            <summary>
+            Native collider mesh structure
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.ColliderMesh.vertices">
+            <summary>
+            The vertices of the mesh
+            <para>
+            It contains the X, Y, Z positions of mesh vertices.
+            Triangles are defined using "indices".
+            </para>
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.ColliderMesh.vertexCount">
+            <summary>
+            The number of element in the vertex buffer
+            <para>
+            Note that one vertex has three component (X, Y, Z).
+            So the size of vertices array is `3 x vertexCount`.
+            </para>
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.ColliderMesh.indices">
+            <summary>
+            The vertex indices defining the triangles of the mesh
+            <para>
+            Triangles are listed one after the others (and not combined using a fan or strip algorithm).
+            The number of elements must equal `3 x triangleCount`.
+            </para>
+            <para>
+            Outward faces are defined to be specified counter-clockwise.
+            Face-direction information is not currently used but may be in the future.
+            </para>
+            <para>If null, the vertices are interpreted as a simple triangle list.</para>
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.ColliderMesh.triangleCount">
+            <summary>
+            The number of triangle present in the mesh
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.ColliderMesh.boundingBox">
+            <summary>
+            The bounding box of the mesh collider
+            </summary>
+            <remarks>If null the bounding box is re-calculated internally</remarks>
+        </member>
+        <member name="T:Fove.ObjectCollider.NativeCollider">
+            <summary>
+            Native collider base structure
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.NativeCollider.center">
+            <summary>
+            The center offset of the collider
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.NativeCollider.shapeType">
+            <summary>
+            The collider type
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.NativeCollider.cubeDefinition">
+            <summary>
+            The cube definition if the collider is a cube
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.NativeCollider.sphereDefinition">
+            <summary>
+            The sphere definition if the collider is a sphere
+            </summary>
+        </member>
+        <member name="F:Fove.ObjectCollider.NativeCollider.meshDefinition">
+            <summary>
+            The mesh definition if the collider is a mesh
+            </summary>
+        </member>
+        <member name="M:Fove.ObjectCollider.GetNativeCollider">
+            <summary>
+            Create and return the native collider structure corresponding to this collider.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Fove.ObjectCollider.ReleaseNativeCollider">
+            <summary>
+            Release native resources possibly allocated during the creation of the native collider object.
+            </summary>
+        </member>
+        <member name="T:Fove.CubeCollider">
+            <summary>
+            A collider having the shape of a Cube
+            </summary>
+        </member>
+        <member name="F:Fove.CubeCollider.size">
+            <summary>
+            The size of the cube
+            </summary>
+        </member>
+        <member name="M:Fove.CubeCollider.GetNativeCollider">
+            <summary>
+            Return a corresponding native cube collider structure
+            </summary>
+        </member>
+        <member name="T:Fove.SphereCollider">
+            <summary>
+            A collider have the shape of a Sphere
+            </summary>
+        </member>
+        <member name="F:Fove.SphereCollider.radius">
+            <summary>
+            The radius of the sphere
+            </summary>
+        </member>
+        <member name="M:Fove.SphereCollider.GetNativeCollider">
+            <summary>
+            Return a corresponding native sphere collider structure
+            </summary>
+        </member>
+        <member name="T:Fove.MeshColliderBase`2">
+            <summary>
+            Generic base class for a mesh collider
+            <para>
+            A mesh collider can either be defined through a triangle list or through a vertex/index buffer set.
+            If the index buffer pointer is null, then the vertex buffer is interpreted as a regular triangle list.
+            </para>
+            </summary>
+            <typeparam name="TVertex">The type to use for the vertex array</typeparam>
+            <typeparam name="TIndex">The type to use for the index array</typeparam>
+        </member>
+        <member name="F:Fove.MeshColliderBase`2.vertices">
+            <summary>
+            The vertices of the mesh
+            <para>
+            It contains the X, Y, Z positions of mesh vertices.
+            The length of the array should be a multiple of 3.
+            Triangles are defined using "indices".
+            </para>
+            </summary>
+        </member>
+        <member name="F:Fove.MeshColliderBase`2.indices">
+            <summary>
+            The vertex indices defining the triangles of the mesh
+            <para>
+            Triangles are listed one after the others (and not combined using a fan or strip algorithm).
+            The number of elements must multiple of `3`.
+            </para>
+            <para>
+            Outward faces are defined to be specified counter-clockwise.
+            Face-direction information is not currently used but may be in the future.
+            </para>
+            <para>If null, the vertices are interpreted as a simple triangle list.</para>
+            </summary>
+        </member>
+        <member name="F:Fove.MeshColliderBase`2.boundingBox">
+            <summary>
+            The bounding box of the mesh
+            </summary>
+            <remarks>If null the bounding box is re-calculated internally</remarks>
+        </member>
+        <member name="M:Fove.MeshColliderBase`2.GetVertexCount">
+            <summary>
+            Return the number of vertices present in the array
+            </summary>
+        </member>
+        <member name="M:Fove.MeshColliderBase`2.GetIndexCount">
+            <summary>
+            Return the number of indices in the in the array
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Fove.MeshColliderBase`2.GetNativeCollider">
+            <summary>
+            Return a native mesh collider corresponding to this mesh collider
+            </summary>
+        </member>
+        <member name="M:Fove.MeshColliderBase`2.ReleaseNativeCollider">
+            <summary>
+            Release pinned buffer resources
+            </summary>
+        </member>
+        <member name="T:Fove.MeshCollider">
+            <summary>
+            The default mesh collider class.
+            <para>It uses floats for the vertex buffer and int for the index buffer.</para>
+            </summary>
+        </member>
+        <member name="M:Fove.MeshCollider.GetNativeCollider">
+            <inheritdoc/>
+        </member>
+        <member name="M:Fove.MeshCollider.GetVertexCount">
+            <inheritdoc/>
+        </member>
+        <member name="M:Fove.MeshCollider.GetIndexCount">
+            <inheritdoc/>
+        </member>
+        <member name="T:Fove.GazableObject">
+            <summary>
+            Represents an object in a 3D world
+            <para>
+            The bounding shapes of this object are used for ray casts to determine what the user is looking at.
+            Note that multiple bounding shape types can be used simultaneously, such as a sphere and a mesh.
+            </para>
+            </summary>
+            <seealso cref="M:Fove.Headset.RegisterGazableObject(Fove.GazableObject)"/>
+            <seealso cref="M:Fove.Headset.UpdateGazableObject(System.Int32,Fove.ObjectPose@)"/>
+            <seealso cref="M:Fove.Headset.RemoveGazableObject(System.Int32)"/>
+        </member>
+        <member name="F:Fove.GazableObject.IdInvalid">
+            <summary>
+            Predefined object ID to signify "no object"
+            </summary>
+        </member>
+        <member name="F:Fove.GazableObject.id">
+            <summary>
+            Unique ID of the object. User-defined objects should use positive integers.
+            </summary>
+        </member>
+        <member name="F:Fove.GazableObject.pose">
+            <summary>
+            The initial pose of the object
+            </summary>
+        </member>
+        <member name="F:Fove.GazableObject.group">
+            <summary>
+            The gazable object group this object belongs to
+            </summary>
+        </member>
+        <member name="F:Fove.GazableObject.colliders">
+            <summary>
+            A list of colliders defining the geometry of the gazable object
+            </summary>
+        </member>
+        <member name="T:Fove.CameraObject">
+            <summary>
+            Represents a camera in a 3D world
+            <para>The camera view pose determine what the user is looking at 
+            and the object mask specify which objects are rendered.</para>
+            </summary>
+            <seealso cref="M:Fove.Headset.RegisterCameraObject(Fove.CameraObject)"/>
+            <seealso cref="M:Fove.Headset.UpdateCameraObject(System.Int32,Fove.ObjectPose@)"/>
+            <seealso cref="M:Fove.Headset.RemoveCameraObject(System.Int32)"/>
+        </member>
+        <member name="F:Fove.CameraObject.IdInvalid">
+            <summary>
+            Predefined camera ID to signify "no camera"
+            </summary>
+        </member>
+        <member name="F:Fove.CameraObject.id">
+            <summary>
+            Unique ID of the camera. User-defined id should use positive integers.
+            </summary>
+        </member>
+        <member name="F:Fove.CameraObject.pose">
+            <summary>
+            The camera initial pose
+            </summary>
+        </member>
+        <member name="F:Fove.CameraObject.groupMask">
+            <summary>
+            The bit mask specifying which object groups the camera renders
+            </summary>
+        </member>
+        <member name="T:Fove.GraphicsAPI">
+            <summary>
+            Enum for type of Graphics API
+            </summary>
+        </member>
+        <member name="F:Fove.GraphicsAPI.DirectX">
+            <summary>
+            DirectX (Windows only)
+            </summary>
+        </member>
+        <member name="F:Fove.GraphicsAPI.OpenGL">
+            <summary>
+            OpenGL (All platforms, currently in BETA)
+            </summary>
+        </member>
+        <member name="F:Fove.GraphicsAPI.Vulkan">
+            <summary>
+            Metal (Mac only)
+            </summary>
+        </member>
+        <member name="T:Fove.AlphaMode">
+            <summary>
+            Enum to help interpret the alpha of texture
+            <para>Determines how to interpret the alpha of a compositor client texture</para>
+            </summary>
+        </member>
+        <member name="F:Fove.AlphaMode.Auto">
+            <summary>
+            Base layers will use One, overlay layers will use Sample
+            </summary>
+        </member>
+        <member name="F:Fove.AlphaMode.One">
+            <summary>
+            Alpha will always be one (fully opaque)
+            </summary>
+        </member>
+        <member name="F:Fove.AlphaMode.Sample">
+            <summary>
+            Alpha fill be sampled from the alpha channel of the buffer
+            </summary>
+        </member>
+        <member name="T:Fove.CompositorLayerCreateInfo">
+            <summary>
+            Struct used to define the settings for a compositor client
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerCreateInfo.type">
+            <summary>
+            The layer type upon which the client will draw
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerCreateInfo.disableTimewarp">
+            <summary>
+            Setting to disable timewarp, e.g. if an overlay client is operating in screen space
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerCreateInfo.alphaMode">
+            <summary>
+            Setting about whether to use alpha sampling or not, e.g. for a base client
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerCreateInfo.disableFading">
+            <summary>
+            Setting to disable fading when the base layer is misbehaving, e.g. for a diagnostic client
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerCreateInfo.disableDistortion">
+            <summary>
+            Setting to disable a distortion pass, e.g. for a diagnostic client, or a client intending to do its own distortion
+            </summary>
+        </member>
+        <member name="T:Fove.CompositorLayer">
+            <summary>
+            Struct used to store information about an existing compositor layer (after it is created)
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayer.layerId">
+            <summary>
+            Uniquely identifies a compositor layer
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayer.idealResolutionPerEye">
+            <summary>
+            The optimal resolution for a submitted buffer on this layer (for a single eye).
+            Clients are allowed to submit buffers of other resolutions.
+            In particular, clients can use a lower resolution buffer to reduce their rendering overhead.
+            </summary>
+        </member>
+        <member name="T:Fove.CompositorTexture">
+            <summary>
+            Base class of API-specific texture classes
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorTexture.graphicsAPI">
+            <summary>
+            Rendering API of this texture
+            <para>
+            If this is DirectX, this object must be a Fove_DX11Texture
+            If this is OpenGL, this object must be a Fove_GLTexture
+            In C++ this field is initialized automatically by the subclass
+            </para>
+            </summary>
+        </member>
+        <member name="T:Fove.DX11Texture">
+            <summary>
+            Struct used to submit a DirectX 11 texture
+            </summary>
+        </member>
+        <member name="F:Fove.DX11Texture.parent">
+            <summary>
+            The parent object
+            </summary>
+        </member>
+        <member name="F:Fove.DX11Texture.texture">
+            <summary>
+            Pointer to the texture ID3D11Texture2D interface
+            </summary>
+        </member>
+        <member name="F:Fove.DX11Texture.resourceView">
+            <summary>
+            Pointer to the texture ID3D11ShaderResourceView interface
+            </summary>
+        </member>
+        <member name="T:Fove.GLTexture">
+            <summary>
+            Struct used to submit an OpenGL texture
+            </summary>
+            <remarks>The GL context must be active on the thread that submits this.</remarks>
+        </member>
+        <member name="F:Fove.GLTexture.parent">
+            <summary>
+            The parent object
+            </summary>
+        </member>
+        <member name="F:Fove.GLTexture.textureId">
+            <summary>
+            The OpenGl ID of the texture, as returned by glGenTextures
+            </summary>
+        </member>
+        <member name="F:Fove.GLTexture.context">
+            <summary>
+            On mac, this is a CGLContextObj, otherwise this field is reserved and you must pass null
+            </summary>
+        </member>
+        <member name="T:Fove.MetalTexture">
+            <summary>
+            Struct used to submit a texture using the Apple Metal API
+            </summary>
+        </member>
+        <member name="F:Fove.MetalTexture.parent">
+            <summary>
+            The parent object
+            </summary>
+        </member>
+        <member name="F:Fove.MetalTexture.texture">
+            <summary>
+            Pointer to an MTLTexture (which must have MTLTextureUsageShaderRead specified).
+            </summary>
+        </member>
+        <member name="T:Fove.TextureBounds">
+            <summary>
+            Specify a region of a texture in normalized space
+            </summary>
+            <remarks>Coordinates in normalized space where 0 is left/top and 1 is bottom/right</remarks>
+        </member>
+        <member name="F:Fove.TextureBounds.left">
+            <summary>
+            The horizontal coordinate of the left border.
+            </summary>
+        </member>
+        <member name="F:Fove.TextureBounds.top">
+            <summary>
+            The vertical coordinate of the top border
+            </summary>
+        </member>
+        <member name="F:Fove.TextureBounds.right">
+            <summary>
+            The horizontal coordinate of the right border.
+            </summary>
+        </member>
+        <member name="F:Fove.TextureBounds.bottom">
+            <summary>
+            The vertical coordinate of the bottom border
+            </summary>
+        </member>
+        <member name="T:Fove.CompositorLayerEyeSubmitInfo">
+            <summary>
+            Struct used to conglomerate the texture settings for a single eye, when submitting a given layer
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerEyeSubmitInfo.texInfo">
+            <summary>
+            Texture to submit for this eye
+            </summary>
+            <remarks>This may be null as long as the other submitted eye's texture isn't (thus allowing each eye to be submitted separately)</remarks>
+        </member>
+        <member name="F:Fove.CompositorLayerEyeSubmitInfo.bounds">
+            <summary>
+            The portion of the texture that is used to represent the eye (Eg. half of it if the texture contains both eyes)
+            </summary>
+        </member>
+        <member name="T:Fove.CompositorLayerSubmitInfo">
+            <summary>
+            Struct used to conglomerate the texture settings when submitting a given layer
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerSubmitInfo.layerId">
+            <summary>
+            The layer ID as fetched from Fove_CompositorLayer
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerSubmitInfo.pose">
+            <summary>
+            The pose used to draw this layer, usually coming from fove_Compositor_waitForRenderPose
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerSubmitInfo.left">
+            <summary>
+            Information about the left eye
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerSubmitInfo.right">
+            <summary>
+            Information about the right eye
+            </summary>
+        </member>
+        <member name="T:Fove.AdapterId">
+            <summary>
+            Struct used to identify a GPU adapter (Windows only)
+            </summary>
+        </member>
+        <member name="F:Fove.AdapterId.lowPart">
+            <summary>
+            The lower part of the ID
+            </summary>
+        </member>
+        <member name="F:Fove.AdapterId.highPart">
+            <summary>
+            The higher part of the ID
+            </summary>
+        </member>
+        <member name="T:Fove.Buffer">
+            <summary>
+            A generic memory buffer
+            </summary>
+            <remarks>No ownership or lifetime semantics are specified. Please see the comments on the functions that use this.</remarks>
+        </member>
+        <member name="F:Fove.Buffer.data">
+            <summary>
+            Pointer to the start of the memory buffer
+            </summary>
+        </member>
+        <member name="F:Fove.Buffer.length">
+            <summary>
+            Length, in bytes, of the buffer
+            </summary>
+        </member>
+        <member name="T:Fove.ResearchCapabilities">
+            <summary>
+            Research-API-specific capabilities
+            </summary>
+        </member>
+        <member name="F:Fove.ResearchCapabilities.None">
+            <summary>
+            No specific feature requested
+            </summary>
+        </member>
+        <member name="F:Fove.ResearchCapabilities.EyeImage">
+            <summary>
+            Request the headset internal IR camera eye image
+            </summary>
+        </member>
+        <member name="F:Fove.ResearchCapabilities.PositionImage">
+            <summary>
+            Request the external IR camera position image
+            </summary>
+        </member>
+        <member name="T:Fove.EyeData">
+            <summary>
+            Eye related information
+            </summary>
+        </member>
+        <member name="F:Fove.EyeData.eyeballRadius">
+            <summary>
+            Radius in meters of the eyeball
+            </summary>
+        </member>
+        <member name="F:Fove.EyeData.irisRadius">
+            <summary>
+            Radius in meters of the iris
+            </summary>
+        </member>
+        <member name="F:Fove.EyeData.pupilRadius">
+            <summary>
+            Radius in meters of the pupil
+            </summary>
+        </member>
+        <member name="T:Fove.ResearchGaze">
+            <summary>
+            Struct for returning gaze data from the research API
+            </summary>
+        </member>
+        <member name="F:Fove.ResearchGaze.id">
+            <summary>
+            Incremental counter which tells if the data is a fresh value at a given frame
+            </summary>
+        </member>
+        <member name="F:Fove.ResearchGaze.timestamp">
+            <summary>
+            The time at which the gaze data was captured, in microseconds since an unspecified epoch
+            </summary>
+        </member>
+        <member name="F:Fove.ResearchGaze.eyeDataLeft">
+            <summary>
+            Left eye size information
+            </summary>
+        </member>
+        <member name="F:Fove.ResearchGaze.eyeDataRight">
+            <summary>
+            Right eye size information
+            </summary>
+        </member>
+        <member name="F:Fove.ResearchGaze.iod">
+            <summary>
+            Distance in meters between the center of the eyes
+            </summary>
+        </member>
+        <member name="F:Fove.ResearchGaze.ipd">
+            <summary>
+            Distance in meters between the pupil centers (continually updated as the eyes move)
+            </summary>
+        </member>
+        <member name="T:Fove.EyeShape">
+            <summary>
+            Specify the shape of an eye (research API)
+            </summary>
+        </member>
+        <member name="F:Fove.EyeShape.OutlinePointCount">
+            <summary>
+            The number of point forming the eye outline
+            </summary>
+        </member>
+        <member name="F:Fove.EyeShape.outlinePoint0">
+            <summary>
+            Inside extremity
+            </summary>
+        </member>
+        <member name="F:Fove.EyeShape.outlinePoint1">
+            <summary>
+            Lower eyelid point 1
+            </summary>
+        </member>
+        <member name="F:Fove.EyeShape.outlinePoint2">
+            <summary>
+            Lower eyelid point 2
+            </summary>
+        </member>
+        <member name="F:Fove.EyeShape.outlinePoint3">
+            <summary>
+            Lower eyelid point 3
+            </summary>
+        </member>
+        <member name="F:Fove.EyeShape.outlinePoint4">
+            <summary>
+            Lower eyelid point 4
+            </summary>
+        </member>
+        <member name="F:Fove.EyeShape.outlinePoint5">
+            <summary>
+            Lower eyelid point 5
+            </summary>
+        </member>
+        <member name="F:Fove.EyeShape.outlinePoint6">
+            <summary>
+            Outside extremity
+            </summary>
+        </member>
+        <member name="F:Fove.EyeShape.outlinePoint7">
+            <summary>
+            Upper eyelid point 1
+            </summary>
+        </member>
+        <member name="F:Fove.EyeShape.outlinePoint8">
+            <summary>
+            Upper eyelid point 2
+            </summary>
+        </member>
+        <member name="F:Fove.EyeShape.outlinePoint9">
+            <summary>
+            Upper eyelid point 3
+            </summary>
+        </member>
+        <member name="F:Fove.EyeShape.outlinePoint10">
+            <summary>
+            Upper eyelid point 4
+            </summary>
+        </member>
+        <member name="F:Fove.EyeShape.outlinePoint11">
+            <summary>
+            Upper eyelid point 5
+            </summary>
+        </member>
+        <member name="P:Fove.EyeShape.Outline">
+            <summary>
+            Return the eye outline, it is composed of 12 points as follow:
+            <list type="bullet">
+            <item>Point 0: the inside extremity of the outline (the point the closest to the nose)</item>
+            <item>Point 1 to 5: bottom eyelid points going from the inside to the outside of the eye</item>
+            <item>Point 6: the outside extremity of the outline (the point the furthest from the nose)</item>
+            <item>Point 7 to 11: top eyelid points going from the outside to the inside of the eye</item>
+            </list>
+            </summary>
+        </member>
+        <member name="T:Fove.ImageType">
+            <summary>
+            Indicates the source of an image
+            </summary>
+        </member>
+        <member name="F:Fove.ImageType.StereoEye">
+            <summary>
+            Image comes from an eye camera, with the left/right eyes stitched into one image
+            </summary>
+        </member>
+        <member name="F:Fove.ImageType.Position">
+            <summary>
+            Image comes from a position tracking camera
+            </summary>
+        </member>
+        <member name="T:Fove.BitmapImage">
+            <summary>
+            A 2D bitmap image
+            </summary>
+        </member>
+        <member name="F:Fove.BitmapImage.timestamp">
+            <summary>
+            Timestamp of the image, in microseconds since an unspecified epoch
+            </summary>
+        </member>
+        <member name="F:Fove.BitmapImage.type">
+            <summary>
+            Type of the bitmap for disambiguation
+            </summary>
+        </member>
+        <member name="F:Fove.BitmapImage.image">
+            <summary>
+            BMP data (including full header that contains size, format, etc)
+            The height may be negative to specify a top-down bitmap. 
+            </summary>
+        </member>
+        <member name="T:Fove.CalibrationTarget">
+            <summary>
+            Represent a calibration target of the calibration process
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationTarget.position">
+            <summary>
+            The position of the calibration target in the 3D world space
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationTarget.recommendedSize">
+            <summary>
+            The recommended size for the calibration target in world space unit.
+            </summary>
+            <remarks>A recommended size of 0 means that the display of the target is not recommended at the current time</remarks>
+        </member>
+        <member name="T:Fove.CalibrationState">
+            <summary>
+            Indicate the state of a calibration process
+            <para>
+            A calibration process always starts from the `NotStarted` state,
+            then it can go back and forth between the `WaitingForUser` and `CollectingData` states,
+            then it goes to the `ProcessingData` state and finishes with the `Successful` state.
+            </para>
+            <para>
+            A failure can happen any time during the process, and stops the process where it was.
+            </para>
+            <para>
+            From the `ProcessingData` state the calibration process do not require any rendering
+            and gameplay can be started if wanted but new calibration won't be effective before reaching the `Successful` state.
+            </para>
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationState.NotStarted">
+            <summary>
+            No calibration process haven't been started yet
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationState.HeadsetAdjustment">
+            <summary>
+            The calibration process is waiting for the user to adjust the headset
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationState.WaitingForUser">
+            <summary>
+            The calibration process is waiting for the user to get ready
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationState.CollectingData">
+            <summary>
+            The calibration process is currently collecting calibration data
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationState.ProcessingData">
+            <summary>
+            The calibration process is currently processing the collected data
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationState.Successful_HighQuality">
+            <summary>
+            The calibration is successful and of high quality
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationState.Successful_MediumQuality">
+            <summary>
+            The calibration is successful and of medium quality
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationState.Successful_LowQuality">
+            <summary>
+            The calibration is successful but of low quality
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationState.Failed_Unknown">
+            <summary>
+            The calibration process failed due to an unknown issue
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationState.Failed_InaccurateData">
+            <summary>
+            The calibration process failed because of inaccurate or flawed data
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationState.Failed_NoRenderer">
+            <summary>
+            The calibration process failed after timeout because it couldn't find a renderer
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationState.Failed_NoUser">
+            <summary>
+            The calibration process failed after timeout because it couldn't detect the user
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationState.Failed_Aborted">
+            <summary>
+            The calibration process was manually aborted by the user
+            </summary>
+        </member>
+        <member name="T:Fove.CalibrationMethod">
+            <summary>
+            Indicate the calibration method to use
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationMethod.Default">
+            <summary>
+            Use the calibration method specified in the configuration file (default: single point)
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationMethod.OnePoint">
+            <summary>
+            Use the simple point calibration method (Requires license)
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationMethod.Spiral">
+            <summary>
+            Use the spiral calibration method
+            </summary>
+        </member>
+        <member name="T:Fove.EyeByEyeCalibration">
+            <summary>
+            Indicate whether each eye should be calibrated separately or not
+            </summary>
+        </member>
+        <member name="F:Fove.EyeByEyeCalibration.Default">
+            <summary>
+            Use the settings coming from the configuration file (default: Disabled)
+            </summary>
+        </member>
+        <member name="F:Fove.EyeByEyeCalibration.Disabled">
+            <summary>
+            Calibrate both eye simultaneously
+            </summary>
+        </member>
+        <member name="F:Fove.EyeByEyeCalibration.Enabled">
+            <summary>
+            Calibrate each eye separately, first the left, then the right (Requires license)
+            </summary>
+        </member>
+        <member name="T:Fove.CalibrationData">
+            <summary>
+            Provide all the calibration data needed to render the current state of the calibration process
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationData.method">
+            <summary>
+            The calibration method currently used
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationData.state">
+            <summary>
+            The current state of the calibration
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationData.targetL">
+            <summary>
+            The current calibration target to display for the left eye
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationData.targetR">
+            <summary>
+            The current calibration target to display for the right eye
+            </summary>
+        </member>
+        <member name="T:Fove.CalibrationOptions">
+            <summary>
+            Options specifying how to run a calibration process
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationOptions.lazy">
+            <summary>
+            Do not restart the calibration process if it is already calibrated
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationOptions.restart">
+            <summary>
+            Restart the calibration process from the beginning if it is already running
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationOptions.eyeByEye">
+            <summary>
+            Calibrate both eyes simultaneously or separately
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationOptions.method">
+            <summary>
+            The calibration method to use
+            </summary>
+        </member>
+        <member name="T:Fove.Headset">
+            <summary>
+            This class is a wrapper around the C API's Fove_Headset, and is the main class of the FOVE API.
+            </summary>
+        </member>
+        <member name="M:Fove.Headset.#ctor(Fove.ClientCapabilities)">
+            <summary>
+            Creates a new headset object with the given capabilities
+            </summary>
+            <param name="capabilities">The set of capabilities to register</param>
+        </member>
+        <member name="M:Fove.Headset.Finalize">
+            <summary>
+            Dispose native Headset and destroy the wrapper
+            </summary>
+        </member>
+        <member name="P:Fove.Headset.GazeCastPolicy">
+            <summary>
+            Get or set the current gaze cast policy
+            </summary>
+        </member>
+        <member name="M:Fove.Headset.CreateCompositor">
+            <summary>
+            Returns a compositor interface from the given headset
+            <para>
+            Each call to this function creates a new object. The object should be destroyed with fove_Compositor_destroy
+            It is fine to call this function multiple times with the same headset, the same pointer will be returned.
+            It is ok for the compositor to outlive the headset passed in.
+            </para>
+            </summary>
+            <returns>The compositor instance</returns>
+            <seealso cref="M:Fove.Compositor.Dispose"/>
+            <exception cref="T:System.ApplicationException">When the creation of compositor failed</exception>
+        </member>
+        <member name="M:Fove.Headset.GetResearchHeadset(Fove.ResearchCapabilities)">
+            <summary>
+            Converts an existing headset object into a research headset
+            <para>
+            It is fine to call this function multiple times with the same headset, the same pointer will be returned.
+            The research API does not provide backwards or forwards compatibility with different FOVE runtime.
+            Do not release general purpose software using this API, this is meant for researcher user in a controlled environment (lab).
+            The result Fove_ResearchHeadset is destroyed when the input headset object is destroyed. There is no destroy/free function for the research headset specifically.
+            </para>
+            </summary>
+            <param name="caps">These capabilities are automatically passed to fove_ResearchHeadset_registerCapabilities so as to avoid an extra call</param>
+            <returns>A research-capable headset</returns>
+            <exception cref="T:System.ApplicationException">When the research headset creation failed</exception>
+        </member>
+        <member name="M:Fove.Headset.RegisterCapabilities(Fove.ClientCapabilities)">
+            <summary>
+            Registers a client capability, enabling the required hardware as needed
+            </summary>
+            <remarks>
+            Usually you provide the required capabilities at the creation of the headset
+            But you can add and remove capabilities anytime while the object is alive.
+            </remarks>
+            <param name="caps">A set of capabilities to register. Registering an existing capability is a no-op</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.UnregisterCapabilities(Fove.ClientCapabilities)">
+            <summary>
+            Unregisters a client capability previously registered
+            </summary>
+            <param name="caps">A set of capabilities to unregister. Unregistering an not-existing capability is a no-op</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.IsHardwareConnected(System.Boolean@)">
+            <summary>
+            Writes out whether an HMD is know to be connected or not
+            </summary>
+            <param name="isConnected">True if connected, false otherwise</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.IsHardwareReady(System.Boolean@)">
+            <summary>
+            Writes out whether the hardware for the requested capabilities has started
+            </summary>
+            <param name="isReady">True if ready, false otherwise</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.GetHardwareInfo(Fove.HeadsetHardwareInfo@)">
+            <summary>
+            Writes out the hardware information
+            </summary>
+            <param name="hardwareInfo">The output hardware information</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.CheckSoftwareVersions">
+            <summary>
+            Checks whether the client can run against the installed version of the FOVE SDK
+            </summary>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> if this client is compatible with the currently running service</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_RuntimeVersionTooOld"/> if not compatible with the currently running service</item>
+            <item>Otherwise returns an error representing why this can't be determined</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.GetSoftwareVersions(Fove.Versions@)">
+            <summary>
+            Writes out the current software versions
+            <para>
+            Allows you to get detailed information about the client and runtime versions.
+            Instead of comparing software versions directly, you should simply call
+            `CheckSoftwareVersions` to ensure that the client and runtime are compatible.
+            </para>
+            </summary>
+            <param name="versions">The output software versions</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.WaitForNextEyeFrame">
+            <summary>
+            Waits for next camera frame and associated eye tracking info becomes available
+            </summary>
+            <remarks>
+            Allows you to sync your eye tracking loop to the actual eye-camera loop.
+            On each loop, you would first call this blocking function to wait for a new frame
+            and then proceed to consume eye tracking info associated with the frame.
+            </remarks>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.GetGazeVectors(Fove.GazeVector@,Fove.GazeVector@)">
+            <summary>
+            Writes out each eye's current gaze vector
+            </summary>
+            <param name="left">The left eye</param>
+            <param name="right">The right eye</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.GetGazeVectors2D(Fove.Vec2@,Fove.Vec2@)">
+            <summary>
+            Writes out the user's 2D gaze position on the screens seen through the HMD's lenses
+            <para>
+            The use of lenses and distortion correction creates a screen in front of each eye.
+            This function returns 2D vectors representing where on each eye's screen the user
+            is looking.
+            </para>
+            <para>
+            The vectors are normalized in the range [-1, 1] along both X and Y axes such that the
+            following points are true. Center: (0, 0), Bottom-Left: (-1, -1),Top-Right: (1, 1).
+            </para>
+            </summary>
+            <param name="left">The left eye gaze point in the HMD's virtual screen space</param>
+            <param name="right">The right eye gaze point in the HMD's virtual screen space</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.GetGazeConvergence(Fove.GazeConvergenceData@)">
+            <summary>
+            Writes out eye convergence data information
+            </summary>
+            <param name="convergenceData">The eye convergence data</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.CheckEyesClosed(Fove.Eye@)">
+            <summary>
+            Writes out which eyes are closed
+            </summary>
+            <param name="eye">An enum indicating which of the user eyes are currently closed</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.CheckEyesTracked(Fove.Eye@)">
+            <summary>
+            Writes out which eyes are being tracked
+            </summary>
+            <param name="eye">An enum indicating which of the user eyes are currently tracked</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.IsEyeTrackingEnabled(System.Boolean@)">
+            <summary>
+            Writes out whether the eye tracking hardware has started
+            </summary>
+            <param name="enabled">True if the tracking is enabled</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.IsEyeTrackingCalibrated(System.Boolean@)">
+            <summary>
+            Writes out whether eye tracking has been calibrated
+            </summary>
+            <param name="calibrated">True if the eye tracking system is calibrated</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.IsEyeTrackingCalibrating(System.Boolean@)">
+            <summary>
+            Writes out whether eye tracking is in the process of performing a calibration
+            </summary>
+            <param name="isCalibrating">True if the eye tracking system is calibrating</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.IsHmdAdjustmentGuiVisible(System.Boolean@)">
+            <summary>
+            Writes out whether or not the GUI that asks the user to adjust their headset is being displayed
+            </summary>
+            <param name="isVisible">True if the HMD adjustment GUI is currently displayed to the user</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.IsEyeTrackingReady(System.Boolean@)">
+            <summary>
+            Writes out whether eye tracking is actively tracking eyes
+            </summary>
+            <param name="isReady">True if the eye tracking system is currently tracking</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.IsMotionReady(System.Boolean@)">
+            <summary>
+            Writes out whether motion tracking hardware (IMU) has started
+            </summary>
+            <param name="isReady">True if the motion tracking hardware is operating</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.IsUserPresent(System.Boolean@)">
+            <summary>
+            Writes out whether the user is wearing the headset or not
+            </summary>
+            <remarks>When user is not present Eye tracking values shouldn't be used as invalid.</remarks>
+            <param name="isPresent">True if the user has been detected, false otherwise</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.TareOrientationSensor">
+            <summary>
+            Tares the orientation of the headset
+            </summary>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.IsPositionReady(System.Boolean@)">
+            <summary>
+            Writes out whether position tracking hardware has started
+            </summary>
+            <param name="isReady">True if the position tracking hardware has started</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.TarePositionSensors">
+            <summary>
+            Tares the position of the headset
+            </summary>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.GetLatestPose(Fove.Pose@)">
+            <summary>
+            Writes out the pose of the head-mounted display
+            </summary>
+            <param name="pose">The output latest pose information</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.GetProjectionMatricesLH(System.Single,System.Single,Fove.Matrix44@,Fove.Matrix44@)">
+            <summary>
+            Writes out the values of passed-in left-handed 4x4 projection matrices
+            </summary>
+            <param name="zNear">The near plane in float, Range: from 0 to zFar</param>
+            <param name="zFar">The far plane in float, Range: from zNear to infinity</param>
+            <param name="leftProjMatrix">The output left eye projection matrix</param>
+            <param name="rightProjMatrix">The output right eye projection matrix</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.GetProjectionMatricesRH(System.Single,System.Single,Fove.Matrix44@,Fove.Matrix44@)">
+            <summary>
+            Writes out the values of passed-in right-handed 4x4 projection matrices
+            </summary>
+            <param name="zNear">The near plane in float, Range: from 0 to zFar</param>
+            <param name="zFar">The far plane in float, Range: from zNear to infinity</param>
+            <param name="leftProjMatrix">The output left eye projection matrix</param>
+            <param name="rightProjMatrix">The output right eye projection matrix</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.GetRawProjectionValues(Fove.ProjectionParams@,Fove.ProjectionParams@)">
+            <summary>
+            Writes out values for the view frustum of the specified eye at 1 unit away
+            </summary>
+            <remarks>Please multiply them by zNear to convert to your correct frustum near-plane</remarks>
+            <param name="leftParams">Output parameters for the left eye</param>
+            <param name="rightParams">Output parameters for the right eye</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.GetEyeToHeadMatrices(Fove.Matrix44@,Fove.Matrix44@)">
+            <summary>
+            Writes out the matrices to convert from eye to head space coordinates
+            </summary>
+            <remarks>This is simply a translation matrix that returns +/- IOD/2</remarks>
+            <param name="leftMatrix">The output left eye offset matrix</param>
+            <param name="rightMatrix">The output right eye offset matrix</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.GetRenderIOD(System.Single@)">
+            <summary>
+            Interocular distance to use for rendering in meters
+            <para>
+            This is an estimation of the distance between centers of the left and right eyeballs.
+            Half of the IOD can be used to displace the left and right cameras for stereoscopic rendering.
+            We recommend calling this each frame when doing stereoscopic rendering.
+            Future versions of the FOVE service may update the IOD during runtime as needed.
+            </para>
+            </summary>
+            <param name="iod">A floating point value where the IOD</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.StartEyeTrackingCalibration(Fove.CalibrationOptions)">
+            <summary>
+            Starts eye tracking calibration
+            </summary>
+            <param name="calibrationOptions">Specify the calibration options for the new calibration process to run</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
+            <item><see cref="F:Fove.ErrorCode.License_FeatureAccessDenied"/> if any of the enabled options require a license that is not active on this machine</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.StopEyeTrackingCalibration">
+            <summary>
+            Stops eye tracking calibration if it's running, does nothing if it's not running
+            </summary>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.GetEyeTrackingCalibrationState(Fove.CalibrationState@)">
+            <summary>
+            Get the state of the currently running calibration process
+            </summary>
+            <param name="calibrationState">The output state of the current calibration process</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.Headset.TickEyeTrackingCalibration(System.Single,System.Boolean,Fove.CalibrationData@)">
+            <summary>
+            Tick the current calibration process and retrieve data information to render the current calibration state.
+            <para>
+            This function is how the client declares to the calibration system that is available to render calibration.
+            The calibration system determines which of the available renderers has the highest priority,
+            and returns to that render the information needed to render calibration via the outTarget parameter.
+            Even while ticking this, you may get no result because either no calibration is running,
+            or a calibration is running but some other higher priority renderer is doing the rendering.
+            </para>
+            </summary>
+            <remarks>It is perfectly fine not to call this function, in which case the Fove service will automatically render the calibration process for you.</remarks>
+            <param name="deltaTime">The time elapsed since the last rendered frame</param>
+            <param name="isVisible">Indicate to the calibration system that something is being drawn to the screen.
+            This allows the calibration renderer to take as much time as it wants to display success/failure messages
+            and animate away before the calibration processes is marked as completed by the `IsEyeTrackingCalibrating` function.
+            </param>
+            <param name="target">The calibration current state information</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
+            <item><see cref="F:Fove.ErrorCode.Calibration_OtherRendererPrioritized"/> if another process has currently the priority for rendering calibration process</item>
+            <item><see cref="F:Fove.ErrorCode.License_FeatureAccessDenied"/> if you don't have the license level required to access this feature</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.RegisterGazableObject(Fove.GazableObject)">
+            <summary>
+            Registers an object in the 3D world
+            <para>
+            Registering 3D world objects allows FOVE software to identify which objects are being gazed at.
+            We recommend that clients opt-in to this functionality rather than doing it themselves, as our algorithm may improve over time.
+            Clients of course may do their own detection if they have special needs, such as performance needs, or just want to use their own algorithm.
+            </para>
+            </summary>
+            <remarks>Connection to the service is not required for object registration, thus you can register your world objects at will and not worry about connection or reconnection status</remarks>
+            <param name="obj">A description of the object in the 3D world. Data is copied and no reference is kept to this memory after return</param>
+            <seealso cref="M:Fove.Headset.UpdateGazableObject(System.Int32,Fove.ObjectPose@)"/>
+            <seealso cref="M:Fove.Headset.RemoveGazableObject(System.Int32)"/>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the object is invalid in any way (such as an invalid object id).</item>
+            <item><see cref="F:Fove.ErrorCode.Object_AlreadyRegistered"/> if an object with same id is already registered</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.UpdateGazableObject(System.Int32,Fove.ObjectPose@)">
+            <summary>
+            Update the pose of a previously registered gazable object
+            </summary>
+            <param name="objectId">Id of the object passed to <see cref="M:Fove.Headset.RegisterGazableObject(Fove.GazableObject)"/>()</param>
+            <param name="pose">the updated pose of the object</param>/// <seealso cref="M:Fove.Headset.RegisterCameraObject(Fove.CameraObject)"/>
+            <seealso cref="M:Fove.Headset.RegisterGazableObject(Fove.GazableObject)"/>
+            <seealso cref="M:Fove.Headset.RemoveGazableObject(System.Int32)"/>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the object was not registered</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.RemoveGazableObject(System.Int32)">
+            <summary>
+            Removes a previously registered 3D object from the scene.
+            </summary>
+            <remarks>Because of the asynchronous nature of the FOVE system, this object may still be referenced in future frames for a very short period of time.</remarks>
+            <param name="objectId">Id of the object passed to <see cref="M:Fove.Headset.RegisterGazableObject(Fove.GazableObject)"/>()</param>
+            <seealso cref="M:Fove.Headset.RegisterGazableObject(Fove.GazableObject)"/>
+            <seealso cref="M:Fove.Headset.UpdateGazableObject(System.Int32,Fove.ObjectPose@)"/>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the object was not registered</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.RegisterCameraObject(Fove.CameraObject)">
+            <summary>
+            Registers an camera in the 3D world
+            <para>
+            Registering 3D world objects and camera allows FOVE software to identify which objects are being gazed at.
+            We recommend that clients opt-in to this functionality rather than doing it themselves, as our algorithm may improve over time.
+            Clients of course may do their own detection if they have special needs, such as performance needs, or just want to use their own algorithm.
+            </para>
+            <para>
+            At least 1 camera needs to be registered for automatic object gaze recognition to work. Use the object group mask of the camera to
+            specify which objects the camera is capturing. The camera view pose determine the gaze raycast direction and position.
+            The camera view pose should include any and all offsets from position tracking. No transforms from the headset are added in automatically.
+            </para>
+            </summary>
+            <remarks>Connection to the service is not required for object registration, thus you can register your world objects at will and not worry about connection or reconnection status.</remarks>
+            <param name="camera">A description of the camera. Data is copied and no reference is kept to this memory after return.</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the object is invalid in any way (such as an invalid object id).</item>
+            <item><see cref="F:Fove.ErrorCode.Object_AlreadyRegistered"/> if an object with same id is already registered.</item>
+            </list>
+            </returns>
+            <seealso cref="M:Fove.Headset.UpdateCameraObject(System.Int32,Fove.ObjectPose@)"/>
+            <seealso cref="M:Fove.Headset.RemoveCameraObject(System.Int32)"/>
+        </member>
+        <member name="M:Fove.Headset.UpdateCameraObject(System.Int32,Fove.ObjectPose@)">
+            <summary>
+            Update the pose of a registered camera
+            </summary>
+            <param name="cameraId">Id of the camera passed to <see cref="M:Fove.Headset.RegisterCameraObject(Fove.CameraObject)"/></param>
+            <param name="pose">the updated pose of the camera</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the object was not already registered</item>
+            </list>
+            </returns>
+            <seealso cref="M:Fove.Headset.RegisterCameraObject(Fove.CameraObject)"/>
+            <seealso cref="M:Fove.Headset.RemoveCameraObject(System.Int32)"/>
+        </member>
+        <member name="M:Fove.Headset.RemoveCameraObject(System.Int32)">
+            <summary>
+            Removes a previously registered camera from the scene.
+            </summary>
+            <param name="cameraId">Id of the camera passed to <see cref="M:Fove.Headset.RegisterCameraObject(Fove.CameraObject)"/></param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the object was not already registered</item>
+            </list>
+            </returns>
+            <seealso cref="M:Fove.Headset.RegisterCameraObject(Fove.CameraObject)"/>
+            <seealso cref="M:Fove.Headset.UpdateCameraObject(System.Int32,Fove.ObjectPose@)"/>
+        </member>
+        <member name="M:Fove.Headset.CreateProfile(System.String)">
+            <summary>
+            Creates a new profile
+            <para>
+            The FOVE system keeps a set of profiles so that different users on the same system can store data, such as calibrations, separately.
+            Profiles persist to disk and survive restart.
+            Third party applications can control the profile system and store data within it.
+            </para>
+            </summary>
+            <remarks>This function creates a new profile, but does not add any data or switch to it.</remarks>
+            <param name="newName">Unique name of the profile to create</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>if the profile was successfully created</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.Profile_InvalidName"/> if newName was invalid</item>
+            <item><see cref="F:Fove.ErrorCode.Profile_NotAvailable"/> if the name is already taken</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if newName is null</item>
+            </list>
+            </returns>
+            <seealso cref="M:Fove.Headset.RenameProfile(System.String,System.String)"/>
+            <seealso cref="M:Fove.Headset.DeleteProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.ListProfiles(System.Collections.Generic.List{System.String}@)"/>
+            <seealso cref="M:Fove.Headset.SetCurrentProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.GetCurrentProfile(System.String@)"/>
+            <seealso cref="M:Fove.Headset.GetProfileDataPath(System.String,System.String@)"/>
+        </member>
+        <member name="M:Fove.Headset.RenameProfile(System.String,System.String)">
+            <summary>
+            Renames an existing profile. This works on the current profile as well.
+            </summary>
+            <param name="newName">name of the profile to be renamed</param>
+            <param name="oldName">unique new name of the profile</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>if the profile was successfully renamed</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.Profile_DoesntExist"/> if the requested profile at oldName doesn't exist</item>
+            <item><see cref="F:Fove.ErrorCode.Profile_NotAvailable"/> if the name is already taken</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the old name and new name are the same</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if oldName or newName is null</item>
+            </list>
+            </returns>
+            <seealso cref="M:Fove.Headset.CreateProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.DeleteProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.ListProfiles(System.Collections.Generic.List{System.String}@)"/>
+            <seealso cref="M:Fove.Headset.SetCurrentProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.GetCurrentProfile(System.String@)"/>
+            <seealso cref="M:Fove.Headset.GetProfileDataPath(System.String,System.String@)"/>
+        </member>
+        <member name="M:Fove.Headset.DeleteProfile(System.String)">
+            <summary>
+            Deletes an existing profile. This works on the current profile as well.
+            <para>
+            If the deleted profile is the current profile, then no current profile is set after this returns.
+            In such a case, it is undefined whether any existing profile data loaded into memory may be kept around.
+            </para>
+            </summary>
+            <param name="profileName">name of the profile to be deleted</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>if the profile was successfully deleted</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.Profile_DoesntExist"/> if the requested profile at profileName doesn't exist</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if profileName is null</item>
+            </list>
+            </returns>
+            <seealso cref="M:Fove.Headset.CreateProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.RenameProfile(System.String,System.String)"/>
+            <seealso cref="M:Fove.Headset.ListProfiles(System.Collections.Generic.List{System.String}@)"/>
+            <seealso cref="M:Fove.Headset.SetCurrentProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.GetCurrentProfile(System.String@)"/>
+            <seealso cref="M:Fove.Headset.GetProfileDataPath(System.String,System.String@)"/>
+        </member>
+        <member name="M:Fove.Headset.ListProfiles(System.Collections.Generic.List{System.String}@)">
+            <summary>
+            Lists all existing profiles
+            </summary>
+            <param name="profileNames">The output list containing the existing profile names</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>if the profile list was successfully filled</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            </list>
+            </returns>
+            <seealso cref="M:Fove.Headset.CreateProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.RenameProfile(System.String,System.String)"/>
+            <seealso cref="M:Fove.Headset.DeleteProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.SetCurrentProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.GetCurrentProfile(System.String@)"/>
+            <seealso cref="M:Fove.Headset.GetProfileDataPath(System.String,System.String@)"/>
+        </member>
+        <member name="M:Fove.Headset.SetCurrentProfile(System.String)">
+            <summary>
+            Sets the current profile
+            <para>
+            When changing profile, the FOVE system will load up data, such as calibration data, if it is available.
+            If loading a profile with no calibration data, whether or not the FOVE system keeps old data loaded into memory is undefined.
+            </para>
+            </summary>
+            <remarks>Please note that no-ops are OK but you should check for <see cref="F:Fove.ErrorCode.Profile_NotAvailable"/>.
+            </remarks>
+            <param name="profileName">Name of the profile to make current</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>if the profile was successfully set as the current profile</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.Profile_DoesntExist"/> if there is no such profile</item>
+            <item><see cref="F:Fove.ErrorCode.Profile_NotAvailable"/> if the requested profile is the current profile</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the old name and new name are the same</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if profileName is null</item>
+            </list>
+            </returns>
+            <seealso cref="M:Fove.Headset.CreateProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.RenameProfile(System.String,System.String)"/>
+            <seealso cref="M:Fove.Headset.DeleteProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.ListProfiles(System.Collections.Generic.List{System.String}@)"/>
+            <seealso cref="M:Fove.Headset.GetCurrentProfile(System.String@)"/>
+            <seealso cref="M:Fove.Headset.GetProfileDataPath(System.String,System.String@)"/>
+        </member>
+        <member name="M:Fove.Headset.GetCurrentProfile(System.String@)">
+            <summary>
+            Gets the current profile
+            </summary>
+            <param name="profileName">The output current profile name</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> if the profile name was successfully get</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            </list>
+            </returns>
+            <seealso cref="M:Fove.Headset.CreateProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.RenameProfile(System.String,System.String)"/>
+            <seealso cref="M:Fove.Headset.DeleteProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.ListProfiles(System.Collections.Generic.List{System.String}@)"/>
+            <seealso cref="M:Fove.Headset.SetCurrentProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.GetProfileDataPath(System.String,System.String@)"/>
+        </member>
+        <member name="M:Fove.Headset.GetProfileDataPath(System.String,System.String@)">
+            <summary>
+            Gets the data folder for a given profile
+            <para>Allows you to retrieve a filesytem directory where third party apps can write data associated with this profile. This directory will be created before return.</para>
+            <para>Since multiple applications may write stuff to a profile, please prefix any files you create with something unique to your application.</para>
+            <para>There are no special protections on profile data, and it may be accessible to any other app on the system. Do not write sensitive data here.</para>
+            <para>This is intended for simple uses. For advanced uses that have security concerns, or want to sync to a server, etc,
+            third party applications are encouraged to use their own separate data store keyed by profile name.
+            They will need to test for profile name changes and deletions manually in that case.</para>
+            </summary>
+            <remarks>Please note that no-ops are OK but you should check for <see cref="F:Fove.ErrorCode.Profile_NotAvailable"/>.
+            </remarks>
+            <param name="profileName">The name of the profile to be queried, or an empty string if no profile is set</param>
+            <param name="dataPath">The output data path corresponding to the provided profile</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>if the data path was successfully created and returned</item>
+            <item><see cref="F:Fove.ErrorCode.Profile_DoesntExist"/> if there is no such profile</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.Profile_NotAvailable"/> if the requested profile is the current profile</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if profileName is null</item>
+            </list>
+            </returns>
+            <seealso cref="M:Fove.Headset.CreateProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.RenameProfile(System.String,System.String)"/>
+            <seealso cref="M:Fove.Headset.DeleteProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.ListProfiles(System.Collections.Generic.List{System.String}@)"/>
+            <seealso cref="M:Fove.Headset.SetCurrentProfile(System.String)"/>
+            <seealso cref="M:Fove.Headset.GetCurrentProfile(System.String@)"/>
+        </member>
+        <member name="M:Fove.Headset.Dispose">
+            <summary>
+            Dispose the native headset
+            </summary>
+        </member>
+        <member name="T:Fove.HeadsetResearch">
+            <summary>
+            Class to handle all Research related queries
+            </summary>
+        </member>
+        <member name="M:Fove.HeadsetResearch.RegisterCapabilities(Fove.ResearchCapabilities)">
+            <summary>
+            Registers a research capability, enabling the required hardware as needed
+            </summary>
+            <remarks>
+            Usually you provide the required capabilities at the creation of the research headset.
+            But you can add and remove capabilities anytime while the object is alive.
+            </remarks>
+            <param name="caps">A set of capabilities to register. Registering an existing capability is a no-op</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.HeadsetResearch.UnregisterCapabilities(Fove.ResearchCapabilities)">
+            <summary>
+            Unregisters a research capability previously registered
+            </summary>
+            <param name="caps">A set of capabilities to unregister. Unregistering an not-existing capability is a no-op</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.HeadsetResearch.GetImageRaw(Fove.ImageType,Fove.BitmapImage@)">
+            <summary>
+            Returns the latest of the given type as a native raw bitmap
+            </summary>
+            <remarks>The image data buffer is invalidated upon the next call to this function with the same image type</remarks>
+            <param name="type">The type of image to receive</param>
+            <param name="outImage">The output bitmap</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.HeadsetResearch.GetImage(Fove.ImageType,Fove.Bitmap@)">
+            <summary>
+            Returns the latest image of the given type as an interpreted bitmap
+            </summary>
+            /// <remarks>The image data buffer is invalidated upon the next call to this function with the same image type</remarks>
+            <param name="type">The type of image to receive</param>
+            <param name="outImage">The output image</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.HeadsetResearch.GetGaze(Fove.ResearchGaze@)">
+            <summary>
+            Returns research-related gaze information
+            </summary>
+            <param name="outGaze">The output research gaze information</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.HeadsetResearch.GetEyeShapes(Fove.EyeShape@,Fove.EyeShape@)">
+            <summary>
+            Returns the eye shape of the left and right eyes
+            </summary>
+            <param name="eyeShapeL">The output shape of the left eye</param>
+            <param name="eyeShapeR">The output shape of the right eye</param>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.HeadsetResearch.turnOnPositionTrackingLEDs">
+            <summary>
+            Turns on position tracking LEDs all at once at a default intensity
+            </summary>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+        <member name="M:Fove.HeadsetResearch.turnOffPositionTrackingLEDs">
+            <summary>
+            Turns off position tracking LEDs all at once at a default intensity
+            </summary>
+            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+        </member>
+    </members>
+</doc>
