@@ -9,9 +9,14 @@ namespace Fove.Unity
         // Compositor options
         [Tooltip("Check this to disable time warp on images rendered and sent to the compositor. This is useful if you disable orientation to avoid any jitter due to frame latency.")]
         [SerializeField] protected bool disableTimewarp = false;
-        /*[SerializeField]*/ protected bool disableFading = false;
-        /*[SerializeField]*/ protected bool disableDistortion = false;
-        /*[SerializeField]*/ protected CompositorLayerType layerType = CompositorLayerType.Base; // enforce the use of the base layer for the moment
+        /*[SerializeField]*/
+        protected bool disableFading = false;
+        /*[SerializeField]*/
+        protected bool disableDistortion = false;
+        /*[SerializeField]*/
+        protected CompositorLayerType layerType = CompositorLayerType.Base; // enforce the use of the base layer for the moment
+
+        protected static readonly Result<Ray> DefaultRayResult = new Result<Ray>(new Ray(Vector3.zero, Vector3.forward), ErrorCode.Data_NoUpdate);
 
         private static int instanceCount = 0;
 
@@ -19,94 +24,67 @@ namespace Fove.Unity
 
         protected int Id { get { return id; } }
 
-        protected ObjectPose pose;
+        protected Vector3 previousPosition;
+        protected ObjectPose previousPose;
         protected bool cameraObjectRegistered;
 
-        private Camera _cam;
+        protected Stereo<Matrix4x4> projectionMatrices;
+        protected Stereo<Vector3> eyeOffsets;
 
-        protected struct StereoEyeData
+        protected Vector3 hmdPosition;
+        protected Quaternion hmdOrientation = Quaternion.identity;
+
+        protected Result<Ray> eyeConvergeRay = DefaultRayResult;
+        protected Stereo<Result<Ray>> eyeRays = new Stereo<Result<Ray>>(DefaultRayResult, DefaultRayResult);
+
+        private Camera cam;
+
+        virtual protected void UpdateData()
         {
-            public Stereo<Matrix4x4> projections;
-            public Stereo<Vector3> offsets;
-
-            public Vector3 GetOffset(Eye eye) { return eye == Eye.Left ? offsets.left : offsets.right; }
-            public Matrix4x4 GetProjection(Eye eye) { return eye == Eye.Left ? projections.left : projections.right; }
+            UpdatePoseData();
+            UpdateViewParameters();
+            UpdateGaze();
         }
-        protected StereoEyeData _stereoEyeData = new StereoEyeData();
 
-        protected struct PoseData
-        {
-            public Vector3 position;
-            public Quaternion orientation;
-        }
-        protected PoseData _poseData = new PoseData { orientation = Quaternion.identity };
-
-        protected Result<GazeConvergenceData> _eyeConverge = new Result<GazeConvergenceData>(GazeConvergenceData.ForwardToInfinity, ErrorCode.Data_NoUpdate);
-
-        protected static readonly Ray Forward = new Ray(Vector3.zero, Vector3.forward);
-        protected Result<Stereo<Ray>> _eyeRays = new Result<Stereo<Ray>>(new Stereo<Ray>(Forward), ErrorCode.Data_NoUpdate);
-        
-        Vector3 lastPosition;
-                
-        virtual protected void UpdatePoseData(Vector3 position, Vector3 standingPosition, Quaternion orientation)
+        virtual protected void UpdatePoseData()
         {
             if (fetchOrientation)
-                _poseData.orientation = orientation;
+                hmdOrientation = FoveManager.GetHmdRotation();
 
-            if (fetchPosition) {
-                switch (poseType)
-                {
-                    case PlayerPose.Standing:
-                        _poseData.position = standingPosition;
-                        break;
-                    case PlayerPose.Sitting:
-                        _poseData.position = position;
-                        break;
-                }
-            }
+            if (fetchPosition)
+                hmdPosition = FoveManager.GetHmdPosition(poseType == PlayerPose.Standing);
 
-            transform.localPosition = _poseData.position;
-            transform.localRotation = _poseData.orientation;
+            transform.localPosition = hmdPosition;
+            transform.localRotation = hmdOrientation;
         }
 
-        virtual protected void UpdateGazeMatrices()
+        virtual protected void UpdateViewParameters()
         {
-            _stereoEyeData.projections = FoveManager.GetProjectionMatrices(_cam.nearClipPlane, _cam.farClipPlane);
+            eyeOffsets = FoveManager.GetEyeOffsets();
+            projectionMatrices = FoveManager.GetProjectionMatrices(cam.nearClipPlane, cam.farClipPlane);
         }
 
-        virtual protected void UpdateEyePosition(Result<Stereo<Vector3>> eyeVectors)
-        {
-            if (eyeVectors.Succeeded)
-                _stereoEyeData.offsets = eyeVectors.value;
-        }
-
-        virtual protected void UpdateGaze(Result<GazeConvergenceData> hmdGazeConv, Result<Stereo<Vector3>> eyeVectors)
+        virtual protected void UpdateGaze()
         {
             if (!fetchGaze)
             {
-                // override the provided value with default ones
-                var error = ErrorCode.Data_NoUpdate;
-                hmdGazeConv = new Result<GazeConvergenceData>(GazeConvergenceData.ForwardToInfinity, error);
-                eyeVectors = new Result<Stereo<Vector3>>(new Stereo<Vector3>(Vector3.forward), error);
+                eyeConvergeRay.error = ErrorCode.Data_NoUpdate;
+                eyeRays.left.error = ErrorCode.Data_NoUpdate;
+                eyeRays.right.error = ErrorCode.Data_NoUpdate;
             }
 
-            // convergence
-            _eyeConverge = GetWorldSpaceConvergence(ref hmdGazeConv);
-            
-            // eye rays
-            _eyeRays.error = eyeVectors.error; // left and right error are the same as both are fetch by the same function
-            CalculateGazeRays(ref _stereoEyeData.offsets, ref eyeVectors.value, out _eyeRays.value);
+            eyeConvergeRay = GetWorldSpaceConvergence(FoveManager.GetHmdCombinedGazeRay());
+            eyeRays.left = CalculateWorldGazeVector(eyeOffsets.left, FoveManager.GetHmdGazeVector(Eye.Left));
+            eyeRays.right = CalculateWorldGazeVector(eyeOffsets.right, FoveManager.GetHmdGazeVector(Eye.Right));
         }
 
         virtual protected bool ShouldRenderEye(Eye which)
         {
-            if (which == Eye.Neither || which == Eye.Both)
+            if (eyeTargets == EyeTarget.Neither)
                 return false;
 
-            if (((int)eyeTargets & (int)which) == 0)
-                return false;
-
-            return true;
+            return eyeTargets != EyeTarget.Right && which == Eye.Left
+                || eyeTargets != EyeTarget.Left && which == Eye.Right;
         }
 
         /// <summary>
@@ -121,32 +99,32 @@ namespace Fove.Unity
             if (!ShouldRenderEye(which))
                 return;
 
-            var origCullMask = _cam.cullingMask;
+            var origCullMask = cam.cullingMask;
             var eyeCullMask = which == Eye.Left ? cullMaskLeft : cullMaskRight;
-            _cam.cullingMask = origCullMask & ~eyeCullMask;
+            cam.cullingMask = origCullMask & ~eyeCullMask;
 
-            var eyePosOffset = _stereoEyeData.GetOffset(which);
+            var eyePosOffset = eyeOffsets[which];
 
             // move the camera to the eye position
-            transform.localPosition = _poseData.position + _poseData.orientation * eyePosOffset;
-            transform.localRotation = _poseData.orientation;
+            transform.localPosition = hmdPosition + hmdOrientation * eyePosOffset;
+            transform.localRotation = hmdOrientation;
 
             // move camera children inversely to keep the stereo projection effect
             foreach (Transform child in transform)
                 child.localPosition -= eyePosOffset;
 
-            _cam.projectionMatrix = _stereoEyeData.GetProjection(which);
-            _cam.targetTexture = targetTexture;
+            cam.projectionMatrix = projectionMatrices[which];
+            cam.targetTexture = targetTexture;
 
-            _cam.Render();
+            cam.Render();
 
-            _cam.cullingMask = origCullMask;
-            _cam.targetTexture = null;
-            _cam.ResetProjectionMatrix();
+            cam.cullingMask = origCullMask;
+            cam.targetTexture = null;
+            cam.ResetProjectionMatrix();
 
             // reset camera position
-            transform.localPosition = _poseData.position;
-            transform.localRotation = _poseData.orientation;
+            transform.localPosition = hmdPosition;
+            transform.localRotation = hmdOrientation;
 
             // reset camera children position
             foreach (Transform child in transform)
@@ -169,9 +147,9 @@ namespace Fove.Unity
                 transform.localPosition = Vector3.zero;
                 transform.localRotation = Quaternion.identity;
             }
-            _cam = GetComponent<Camera>();
+            cam = GetComponent<Camera>();
             if (!FoveSettings.CustomDesktopView && !FoveSettings.IsUsingOpenVR)
-                _cam.enabled = false;
+                cam.enabled = false;
         }
 
         private void RecreateLayer()
@@ -193,10 +171,7 @@ namespace Fove.Unity
         virtual protected void OnEnable()
         {
             RecreateLayer();
-            FoveManager.PoseUpdate.AddListener(UpdatePoseData);
-            FoveManager.EyeProjectionUpdate.AddListener(UpdateGazeMatrices);
-            FoveManager.EyePositionUpdate.AddListener(UpdateEyePosition);
-            FoveManager.GazeUpdate.AddListener(UpdateGaze);
+            FoveManager.AddInUpdate += UpdateData;
             if (registerCameraObject)
                 RegisterCameraObject();
         }
@@ -214,22 +189,18 @@ namespace Fove.Unity
         virtual protected void OnDisable()
         {
             FoveManager.UnregisterInterface(this);
-
-            FoveManager.PoseUpdate.RemoveListener(UpdatePoseData);
-            FoveManager.EyeProjectionUpdate.RemoveListener(UpdateGazeMatrices);
-            FoveManager.EyePositionUpdate.RemoveListener(UpdateEyePosition);
-            FoveManager.GazeUpdate.RemoveListener(UpdateGaze);
+            FoveManager.AddInUpdate -= UpdateData;
             if (registerCameraObject)
                 RemoveCameraObject();
         }
 
         virtual protected void UpdatePose()
         {
-            pose.position = Utils.ToVec3(transform.position);
-            pose.rotation = Utils.ToQuat(transform.rotation);
-            pose.scale = new Vec3(1, 1, 1);
-            pose.velocity = Utils.ToVec3((transform.position - lastPosition) / Time.deltaTime);
-            lastPosition = transform.position;
+            previousPose.position = Utils.ToVec3(transform.position);
+            previousPose.rotation = Utils.ToQuat(transform.rotation);
+            previousPose.scale = new Vec3(1, 1, 1);
+            previousPose.velocity = Utils.ToVec3((transform.position - previousPosition) / Time.deltaTime);
+            previousPosition = transform.position;
         }
 
         virtual protected void LateUpdate()
@@ -238,25 +209,26 @@ namespace Fove.Unity
                 return;
 
             UpdatePose();
-            var res = FoveManager.Headset.UpdateCameraObject(Id, ref pose);
-            if (res != ErrorCode.None)
+            var res = FoveManager.Headset.UpdateCameraObject(Id, ref previousPose);
+            if (res.Failed)
                 Debug.LogError("Update camera object pose failed. Error code=" + res);
         }
 
         virtual protected bool CanSee()
         {
-            var closedEyesResult = FoveManager.CheckEyesClosed();
-            if (_eyeConverge.HasError || closedEyesResult.HasError)
+            if (!eyeConvergeRay.IsValid)
                 return false;
 
-            var closedEyes = closedEyesResult.value;
+            var left = FoveManager.GetEyeState(Eye.Left);
+            var right = FoveManager.GetEyeState(Eye.Right);
+
             var gazeCastPolicy = FoveManager.GazeCastPolicy;
             switch (gazeCastPolicy)
             {
                 case GazeCastPolicy.DismissBothEyeClosed:
-                    return closedEyes != Eye.Both;
+                    return (left.IsValid && left.value == EyeState.Opened) || (right.IsValid && right.value == EyeState.Opened);
                 case GazeCastPolicy.DismissOneEyeClosed:
-                    return closedEyes == Eye.Neither;
+                    return left.IsValid && right.IsValid && left.value == EyeState.Opened && right.value == EyeState.Opened;
                 case GazeCastPolicy.NeverDismiss:
                     return true;
             }
@@ -268,29 +240,25 @@ namespace Fove.Unity
          * HELPER METHODS
         \****************************************************************************************************/
 
-        protected Result<GazeConvergenceData> GetWorldSpaceConvergence(ref Result<GazeConvergenceData> localGaze)
+        protected Result<Ray> GetWorldSpaceConvergence(Result<Ray> localGaze)
         {
-            var ray = localGaze.value.ray;
-            var distance = localGaze.value.distance;
+            var ray = localGaze.value;
             var worldOrigin = transform.TransformPoint(ray.origin);
-            var worldEnd = transform.TransformPoint(ray.origin + distance * ray.direction);
             var worldDirection = transform.TransformDirection(ray.direction);
-            var worldDistance = (worldEnd - worldOrigin).magnitude;
             var worldRay = new Ray(worldOrigin, worldDirection);
-            var worldGazeConvergence = new GazeConvergenceData(worldRay, worldDistance);
 
-            return new Result<GazeConvergenceData>(worldGazeConvergence, localGaze.error);
+            return new Result<Ray>(worldRay, localGaze.error);
         }
 
-        protected void CalculateGazeRays(ref Stereo<Vector3> eyeOffsets, ref Stereo<Vector3> eyeVectors, out Stereo<Ray> gazeRays)
+        protected Result<Ray> CalculateWorldGazeVector(Vector3 eyeOffset, Result<Vector3> eyeVector)
         {
             var hmdToWorldMat = transform.localToWorldMatrix;
-            Utils.CalculateGazeRays(ref hmdToWorldMat, ref eyeOffsets, ref eyeVectors, out gazeRays);
+            return Utils.CalculateWorldGazeVector(ref hmdToWorldMat, ref eyeOffset, ref eyeVector);
         }
 
         protected bool InternalGazecastHelperSingle(Collider col, out RaycastHit hit, float maxDistance)
         {
-            var ray = _eyeConverge.value.ray;
+            var ray = eyeConvergeRay.value;
             bool eyesInsideCollider = col.bounds.Contains(ray.origin);
 
             if (eyesInsideCollider || !CanSee())
@@ -298,7 +266,7 @@ namespace Fove.Unity
                 hit = new RaycastHit();
                 return false;
             }
-            
+
             if (col.Raycast(ray, out hit, maxDistance))
                 return true;
 
@@ -312,7 +280,7 @@ namespace Fove.Unity
                 hit = new RaycastHit();
                 return false;
             }
-            var ray = _eyeConverge.value.ray;
+            var ray = eyeConvergeRay.value;
             Debug.DrawRay(ray.origin, ray.direction, Color.blue, 2.0f);
             return Physics.Raycast(ray, out hit, maxDistance, layerMask, queryTriggers);
         }
@@ -322,7 +290,7 @@ namespace Fove.Unity
             if (!CanSee())
                 return null;
 
-            return Physics.RaycastAll(_eyeConverge.value.ray, maxDistance, layerMask, queryTriggers);
+            return Physics.RaycastAll(eyeConvergeRay.value, maxDistance, layerMask, queryTriggers);
         }
 
         protected int InternalGazecastHelperNonAlloc(RaycastHit[] results, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggers)
@@ -330,7 +298,7 @@ namespace Fove.Unity
             if (!CanSee())
                 return 0;
 
-            return Physics.RaycastNonAlloc(_eyeConverge.value.ray, results, maxDistance, layerMask, queryTriggers);
+            return Physics.RaycastNonAlloc(eyeConvergeRay.value, results, maxDistance, layerMask, queryTriggers);
         }
     }
 }

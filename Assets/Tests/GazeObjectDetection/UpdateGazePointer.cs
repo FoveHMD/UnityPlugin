@@ -15,12 +15,13 @@ public class UpdateGazePointer : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
-        var gazeConv = FoveManager.GetHMDGazeConvergence().value;
-        var dist = useGazeConvergenceDepth ? gazeConv.distance : distance;
+        var gazeRay = FoveManager.GetHmdCombinedGazeRay().value;
+        var gazeDepth = FoveManager.GetCombinedGazeDepth().value;
+        var dist = useGazeConvergenceDepth ? gazeDepth : distance;
         if (float.IsInfinity(dist) || float.IsNaN(dist))
             dist = distance;
 
-        transform.localPosition = gazeConv.ray.origin + dist * gazeConv.ray.direction;
+        transform.localPosition = gazeRay.origin + dist * gazeRay.direction;
         pointRenderer.enabled = !FoveManager.IsEyeTrackingCalibrating();
     }
 }

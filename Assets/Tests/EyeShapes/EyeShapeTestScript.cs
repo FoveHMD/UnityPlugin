@@ -16,6 +16,8 @@ public class EyeShapeTestScript : MonoBehaviour
     // Use this for initialization
     void Start () 
     {
+        FoveManager.RegisterCapabilities(Fove.ClientCapabilities.EyesImage | Fove.ClientCapabilities.EyeShape);
+
         for (var i = 0; i < EyeShape.OutlinePointCount; ++i)
         {
             eyePointsLeft[i] = (GameObject)Instantiate(eyePointPrefab, eyePointRootLeft, false);
@@ -33,23 +35,25 @@ public class EyeShapeTestScript : MonoBehaviour
     // Update is called once per frame
     void Update () 
     {
-        EyeTextureRenderer.material.mainTexture = FoveResearch.EyesTexture;
+        EyeTextureRenderer.material.mainTexture = FoveManager.GetEyesImage();
+        UpdateEyeShape(Fove.Eye.Left);
+        UpdateEyeShape(Fove.Eye.Right);
+    }
 
-        var eyeShapesResult = FoveResearch.GetEyeShapes();
-        if (eyeShapesResult.HasError)
+    void UpdateEyeShape(Fove.Eye eye)
+    {
+        var shapeResult = FoveManager.GetEyeShape(eye);
+        if (shapeResult.Failed)
         {
-            Debug.LogWarning("Failed to retrieve eye shapes");
+            Debug.LogWarning("Failed to retrieve eye shape");
             return;
         }
 
-        var shapes = eyeShapesResult.value;
+        var shapes = shapeResult.value;
+        var eyePoints = eye == Fove.Eye.Left ? eyePointsLeft : eyePointsRight;
 
         int i = 0;
-        foreach(var point in shapes.left.Outline)
-            eyePointsLeft[i++].transform.localPosition = new Vector3(point.x, point.y, 0);
-        
-        int j = 0;
-        foreach (var point in shapes.right.Outline)
-            eyePointsRight[j++].transform.localPosition = new Vector3(point.x, point.y, 0);
+        foreach (var point in shapes.Outline)
+            eyePoints[i++].transform.localPosition = new Vector3(point.x, point.y, 0);
     }
 }

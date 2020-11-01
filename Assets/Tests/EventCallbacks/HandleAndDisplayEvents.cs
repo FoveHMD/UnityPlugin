@@ -25,8 +25,8 @@ public class HandleAndDisplayEvents : MonoBehaviour
 		FoveManager.HardwareIsReady += () => HandleEvent("Hardware ready");
 		FoveManager.EyeTrackingCalibrationStarted += () => HandleEvent("Calibration Started");
 		FoveManager.EyeTrackingCalibrationEnded += (s) => HandleEvent("Calibration Ended: " + s);
-		FoveManager.IsGazeFixatedChanged += (b) => HandleEvent("Gaze fixated changed: " + b);
-		FoveManager.EyesClosedChanged += (c) => HandleEvent("Eye closed changed: " + c);
+		FoveManager.IsUserShiftingAttentionChanged += (b) => HandleEvent("User Shifting Attention changed: " + b);
+		FoveManager.EyeStateChanged += (eye, c) => HandleEvent("Eye state changed: " + eye + "=" + c);
 		FoveManager.UserPresenceChanged += (c) => HandleEvent("User presence changed: " + c);
 		FoveManager.HmdAdjustmentGuiVisibilityChanged += (c) => HandleEvent("Hmd GUI Visibility Changed: " + c);
 	}

@@ -9,7 +9,6 @@ using Fove;
 using System.Text;
 
 using Stopwatch = System.Diagnostics.Stopwatch;
-using GazeConvergenceData = Fove.Unity.GazeConvergenceData;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -78,14 +77,17 @@ public class GazeRecorder : MonoBehaviour
         [Tooltip("The gaze ray for each eye separately")]
         public bool EyeRays = true;
 
-        [Tooltip("The open or closed status of the eyes")]
-        public bool EyesClosed = true;
+        [Tooltip("The open, closed or not detected status of the eyes")]
+        public bool EyesState = true;
 
         [Tooltip("The current radius of the pupil")]
         public bool PupilsRadius = true;
 
         [Tooltip("The Unity object gazed by the user")]
         public bool GazedObject = true;
+
+        [Tooltip("The torsion of the left & right eyes in degree")]
+        public bool EyeTorsion = true;
     }
 
     // Require a reference (assigned via the Unity Inspector panel) to a FoveInterface object.
@@ -137,12 +139,16 @@ public class GazeRecorder : MonoBehaviour
     {
         public float AppTime;
         public bool UserMark;
-        public string GazeObjectName;
-        public GazeConvergenceData GazeConvergence;
-        public Stereo<Ray> EyeRays;
-        public Stereo<bool> EyesClosed;
-        public Stereo<float> PupilsRadius;
+        public Result<string> GazedObjectName;
+        public Result<Ray> GazeConvergenceRay;
+        public Result<float> GazeConvergenceDepth;
+        public Stereo<Result<Ray>> EyeRays;
+        public Stereo<Result<EyeState>> EyesState;
+        public Stereo<Result<float>> PupilsRadius;
+        public Stereo<Result<float>> EyeTorsions;
     }
+
+    const char CsvSeparator = ',';
 
     interface IDataWriter
     {
@@ -210,14 +216,12 @@ public class GazeRecorder : MonoBehaviour
     // The thread object which we will call into the write thread function.
     private Thread collectThread;
 
-    private HeadsetResearch researchHeadset;
-
     // Fove interface transformation matrices
     private class UnityThreadData
     {
         public Matrix4x4 HMDToLocal;
         public Matrix4x4 HMDToWorld;
-        public string gazedObject = "";
+        public Result<string> gazedObject = new Result<string>("", ErrorCode.Data_NoUpdate);
         public bool markKeyDown;
     }
     private UnityThreadData unityThreadData = new UnityThreadData();
@@ -240,8 +244,17 @@ public class GazeRecorder : MonoBehaviour
             return;
         }
 
-        FoveManager.RegisterCapabilities(ClientCapabilities.Gaze); // needed to wait on eye frames
-        researchHeadset = FoveManager.Headset.GetResearchHeadset(ResearchCapabilities.None);
+        var caps = ClientCapabilities.EyeTracking;
+        if (exportFields.GazeConvergence)
+            caps |= ClientCapabilities.GazeDepth;
+        if (exportFields.PupilsRadius)
+            caps |= ClientCapabilities.PupilRadius;
+        if (exportFields.GazedObject)
+            caps |= ClientCapabilities.GazedObjectDetection;
+        if (exportFields.EyeTorsion)
+            caps |= ClientCapabilities.EyeTorsion;
+
+        FoveManager.RegisterCapabilities(caps); 
 
         // We set the initial data slice capacity to the expected size + 1 so that we never waste time reallocating and
         // copying data under the hood. If the system ever requires more than a single extra entry, there is likely
@@ -344,18 +357,17 @@ public class GazeRecorder : MonoBehaviour
         var t = fove.transform;
 
         var markKeyDown = Input.GetKey(markFrameKey);
-        var gazedObject = FoveManager.GetGazedObject(true).value;
-        var gazedObjectName = gazedObject ? gazedObject.name : "";
+        var gazedObjectResult = FoveManager.GetGazedObject();
+        var gazedObjectName = new Result<string>(gazedObjectResult.value? gazedObjectResult.value.name : "", gazedObjectResult.error);
 
         if (immediate)
         {
             // In the case of 120 FPS recording rate, we re-fetch the HMD latest pose
             // and locally recalculate the fove interface local transform
-            var pose = FoveManager.GetHMDPose(true).value;
             var isStanding = fove.poseType == FoveInterface.PlayerPose.Standing;
-            var hmdAdjustedPosition = (isStanding ? pose.standingPosition : pose.position).ToVector3();
+            var hmdAdjustedPosition = FoveManager.GetHmdPosition(isStanding);
             var localPos = fove.fetchPosition? hmdAdjustedPosition : t.position;
-            var localRot = fove.fetchOrientation? pose.orientation.ToQuaternion() : t.rotation;
+            var localRot = fove.fetchOrientation? FoveManager.GetHmdRotation() : t.rotation;
 
             var parentTransfo = t.parent != null ? t.parent.localToWorldMatrix : Matrix4x4.identity;
             var localTransfo = Matrix4x4.TRS(localPos, localRot, t.localScale);
@@ -388,7 +400,7 @@ public class GazeRecorder : MonoBehaviour
             UpdateFoveInterfaceMatrices(false);
 
         bool frameMarked;
-        string gazedObjectName;
+        Result<string> gazedObjectName;
         Matrix4x4 transformMat;
         lock (unityThreadData)
         {
@@ -408,35 +420,40 @@ public class GazeRecorder : MonoBehaviour
             gazedObjectName = unityThreadData.gazedObject;
         }
 
-        var eyeOffsets = FoveManager.GetEyeOffsets(immediate);
-        var eyeVectors = FoveManager.GetEyeVectors(immediate);
+        var eyeOffsets = FoveManager.GetEyeOffsets();
+        var eyeVectorL = FoveManager.GetHmdGazeVector(Eye.Left);
+        var eyeVectorR = FoveManager.GetHmdGazeVector(Eye.Right);
 
-        Stereo<Ray> eyeRays;
-        Utils.CalculateGazeRays(ref transformMat, ref eyeOffsets.value, ref eyeVectors.value, out eyeRays);
+        Stereo<Result<Ray>> eyeRays;
+        eyeRays.left = Utils.CalculateWorldGazeVector(ref transformMat, ref eyeOffsets.value.left, ref eyeVectorL);
+        eyeRays.right = Utils.CalculateWorldGazeVector(ref transformMat, ref eyeOffsets.value.right, ref eyeVectorR);
 
-        var convergenceRay = FoveManager.GetHMDGazeConvergence().value;
-        convergenceRay.ray.origin = transformMat.MultiplyPoint(convergenceRay.ray.origin);
-        convergenceRay.ray.direction = transformMat.MultiplyVector(convergenceRay.ray.direction).normalized;
+        var convergenceDepth = FoveManager.GetCombinedGazeDepth();
+        var convergenceRay = FoveManager.GetHmdCombinedGazeRay();
+        convergenceRay.value.origin = transformMat.MultiplyPoint(convergenceRay.value.origin);
+        convergenceRay.value.direction = transformMat.MultiplyVector(convergenceRay.value.direction).normalized;
 
-        ResearchGaze researchGaze;
-        researchHeadset.GetGaze(out researchGaze);
-        var pupilRadiusLeft = researchGaze.eyeDataLeft.pupilRadius;
-        var pupilRadiusRight = researchGaze.eyeDataRight.pupilRadius;
+        var pupilRadiusLeft = FoveManager.GetPupilRadius(Eye.Left);
+        var pupilRadiusRight = FoveManager.GetPupilRadius(Eye.Right);
 
-        var eyeClosed = FoveManager.CheckEyesClosed(immediate).value;
-        var eyeClosedLeft = (eyeClosed & Eye.Left) != 0;
-        var eyeClosedRight = (eyeClosed & Eye.Right) != 0;
+        var eyeStateL = FoveManager.GetEyeState(Eye.Left);
+        var eyeStateR = FoveManager.GetEyeState(Eye.Right);
+
+        var eyeTorsionL = FoveManager.GetEyeTorsion(Eye.Left);
+        var eyeTorsionR = FoveManager.GetEyeTorsion(Eye.Right);
 
         // If you add new fields, be sure to write them here.
         var datum = new Datum
         {
             AppTime = (float)stopwatch.Elapsed.TotalSeconds,
             UserMark = frameMarked,
-            GazeObjectName = gazedObjectName,
-            GazeConvergence = convergenceRay,
+            GazedObjectName = gazedObjectName,
+            GazeConvergenceRay = convergenceRay,
+            GazeConvergenceDepth = convergenceDepth,
             EyeRays = eyeRays,
-            EyesClosed = new Stereo<bool>(eyeClosedLeft, eyeClosedRight),
-            PupilsRadius = new Stereo<float>(pupilRadiusLeft, pupilRadiusRight),
+            EyesState = new Stereo<Result<EyeState>>(eyeStateL, eyeStateR),
+            PupilsRadius = new Stereo<Result<float>>(pupilRadiusLeft, pupilRadiusRight),
+            EyeTorsions = new Stereo<Result<float>>(eyeTorsionL, eyeTorsionR)
         };
         dataSlice.Add(datum);
 
@@ -481,9 +498,9 @@ public class GazeRecorder : MonoBehaviour
         {
             RecordDatum(true);
 
-            var error = FoveManager.Headset.WaitForNextEyeFrame();
-            if (error != ErrorCode.None)
-                Debug.LogError("An error happened while waiting for next eye frame. Error code:" + error);
+            var result = FoveManager.Headset.WaitAndFetchNextEyeTrackingData();
+            if (result.Failed)
+                Debug.LogError("An error happened while waiting for next eye frame. Error code:" + result.error);
         }
     }
 
@@ -532,8 +549,9 @@ public class GazeRecorder : MonoBehaviour
         private const string GazeObjectHeader = "Gazed Object";
         private const string GazeConvergenceHeader = "Gaze Convergence";
         private const string EyeRayHeader = "Eye ray";
-        private const string EyeClosedHeader = "Eye closed";
-        private const string PupilRadiusHeader = "Pupil radius";
+        private const string EyeStateHeader = "Eye State";
+        private const string PupilRadiusHeader = "Pupil radius (millimeters)";
+        private const string EyeTorsionHeader = "Eye torsion (degrees)";
 
         private readonly ExportSettings export;
 
@@ -547,29 +565,34 @@ public class GazeRecorder : MonoBehaviour
             Action<StringBuilder, string> append = (b, h) =>
             {
                 b.Append(h);
-                b.Append(',');
+                b.Append(CsvSeparator);
             };
             Action<StringBuilder, string> appendLeftRight = (b, h) =>
             {
                 b.Append(h);
-                b.Append(" left,");
+                b.Append(" left");
+                b.Append(CsvSeparator);
                 b.Append(h);
-                b.Append(" right,");
+                b.Append(" right");
+                b.Append(CsvSeparator);
             };
 
             Action<StringBuilder, string> appendXY = (b, h) =>
             {
                 b.Append(h);
-                b.Append(" x,");
+                b.Append(" x");
+                b.Append(CsvSeparator);
                 b.Append(h);
-                b.Append(" y,");
+                b.Append(" y");
+                b.Append(CsvSeparator);
             };
 
             Action<StringBuilder, string> appendXYZ = (b, h) =>
             {
                 appendXY(b, h);
                 b.Append(h);
-                b.Append(" z,");
+                b.Append(" z");
+                b.Append(CsvSeparator);
             };
 
             Action<StringBuilder, string> appendRay = (b, h) =>
@@ -580,7 +603,7 @@ public class GazeRecorder : MonoBehaviour
 
             // Append the full data header to the builder
 
-            builder.Append(','); // keep the first column for the input file
+            builder.Append(CsvSeparator); // keep the first column for the input file
 
             if (export.ApplicationTime)
                 append(builder, AppTimeHeader);
@@ -600,8 +623,8 @@ public class GazeRecorder : MonoBehaviour
                 appendRay(builder, EyeRayHeader + " right");
             }
 
-            if (export.EyesClosed)
-                appendLeftRight(builder, EyeClosedHeader);
+            if (export.EyesState)
+                appendLeftRight(builder, EyeStateHeader);
 
             if (export.PupilsRadius)
                 appendLeftRight(builder, PupilRadiusHeader);
@@ -609,7 +632,10 @@ public class GazeRecorder : MonoBehaviour
             if (export.GazedObject)
                 append(builder, GazeObjectHeader);
 
-            builder.Remove(builder.Length - 1, 1); // remove the last "," of the line
+            if (export.EyeTorsion)
+                appendLeftRight(builder, EyeTorsionHeader);
+
+            builder.Remove(builder.Length - 1, 1); // remove the last separator of the line
             builder.AppendLine();
         }
     }
@@ -621,6 +647,7 @@ public class GazeRecorder : MonoBehaviour
         public AggregatedData Data { get; set; }
 
         private string timeFormat;
+        private string torsionFormat;
         private string vectorFormat;
         private string eyeSizeFormat;
 
@@ -629,22 +656,50 @@ public class GazeRecorder : MonoBehaviour
             this.export = export;
 
             // Setup the significant digits argument strings used when serializing numbers to text for the CSV
-            vectorFormat = "{0:F3},";
-            timeFormat = "{0:F4},";
-            eyeSizeFormat = "{0:F5},";
+            torsionFormat = "{0:F2}";
+            vectorFormat = "{0:F3}";
+            timeFormat = "{0:F4}";
+            eyeSizeFormat = "{0:F2}";
         }
 
-        private void Append(StringBuilder builder, Vector3 vector)
+        private void Append(StringBuilder builder, string format, float value, ErrorCode error)
         {
-            builder.AppendFormat(vectorFormat, vector.x);
-            builder.AppendFormat(vectorFormat, vector.y);
-            builder.AppendFormat(vectorFormat, vector.z);
+            builder.AppendFormat(format, value);
+            if (error != ErrorCode.None)
+            {
+                builder.Append(" - ");
+                builder.Append(error.ToString());
+            }
+            builder.Append(CsvSeparator);
         }
 
-        private void Append(StringBuilder builder, Ray ray)
+        private void Append(StringBuilder builder, string value, ErrorCode error)
         {
-            Append(builder, ray.origin);
-            Append(builder, ray.direction);
+            builder.Append(value);
+            if (error != ErrorCode.None)
+            {
+                builder.Append(" - ");
+                builder.Append(error.ToString());
+            }
+            builder.Append(CsvSeparator);
+        }
+
+        private void Append(StringBuilder builder, string format, Result<float> result)
+        {
+            Append(builder, format, result.value, result.error);
+        }
+
+        private void Append(StringBuilder builder, Result<Vector3> result)
+        {
+            Append(builder, vectorFormat, result.value.x, result.error);
+            Append(builder, vectorFormat, result.value.y, result.error);
+            Append(builder, vectorFormat, result.value.z, result.error);
+        }
+
+        private void Append(StringBuilder builder, Result<Ray> ray)
+        {
+            Append(builder, new Result<Vector3>(ray.value.origin, ray.error));
+            Append(builder, new Result<Vector3>(ray.value.direction, ray.error));
         }
 
         public void Append(StringBuilder builder)
@@ -653,22 +708,24 @@ public class GazeRecorder : MonoBehaviour
 
             foreach (var datum in Data)
             {
-                builder.Append(',');
+                builder.Append(CsvSeparator);
 
                 // This writes each element in the data list as a CSV-formatted line.
                 if (export.ApplicationTime)
-                    builder.AppendFormat(timeFormat, datum.AppTime);
+                    Append(builder, timeFormat, datum.AppTime, ErrorCode.None);
 
                 if (export.UserMark)
                 {
-                    builder.Append(datum.UserMark ? 'X' : ' ');
-                    builder.Append(',');
+                    if (datum.UserMark)
+                        builder.Append('X');
+
+                    builder.Append(CsvSeparator);
                 }
 
                 if (export.GazeConvergence)
                 {
-                    Append(builder, datum.GazeConvergence.ray);
-                    builder.AppendFormat(vectorFormat, datum.GazeConvergence.distance);
+                    Append(builder, datum.GazeConvergenceRay);
+                    Append(builder, vectorFormat, datum.GazeConvergenceDepth);
                 }
 
                 if (export.EyeRays)
@@ -677,22 +734,26 @@ public class GazeRecorder : MonoBehaviour
                     Append(builder, datum.EyeRays.right);
                 }
 
-                if (export.EyesClosed)
+                if (export.EyesState)
                 {
-                    builder.AppendFormat("{0},", datum.EyesClosed.left);
-                    builder.AppendFormat("{0},", datum.EyesClosed.right);
+                    Append(builder, datum.EyesState.left.value.ToString(), datum.EyesState.left.error);
+                    Append(builder, datum.EyesState.right.value.ToString(), datum.EyesState.right.error);
                 }
 
                 if (export.PupilsRadius)
                 {
-                    builder.AppendFormat(eyeSizeFormat, datum.PupilsRadius.left);
-                    builder.AppendFormat(eyeSizeFormat, datum.PupilsRadius.right);
+                    var pupils = datum.PupilsRadius;
+                    Append(builder, eyeSizeFormat, 1000 * pupils.left.value, pupils.left.error);
+                    Append(builder, eyeSizeFormat, 1000 * pupils.right.value, pupils.right.error);
                 }
 
                 if (export.GazedObject)
+                    Append(builder, datum.GazedObjectName.value, datum.GazedObjectName.error);
+
+                if (export.EyeTorsion)
                 {
-                    builder.Append(datum.GazeObjectName);
-                    builder.Append(',');
+                    Append(builder, torsionFormat, datum.EyeTorsions.left);
+                    Append(builder, torsionFormat, datum.EyeTorsions.right);
                 }
 
                 if (builder.Length > 2) // remove the last "," of the line

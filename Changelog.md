@@ -1,5 +1,10 @@
 # FOVE Unity Plugin Changelog
 
+## 4.0.0
+* `FoveManager`:
+  * Add the `HasHmdAdjustmentGuiTimeout` API
+  * Add the `IsEyeTrackingCalibratedForGlasses` API
+
 ## 3.2.0
 * All Fove APIs now return a `Result` structure containing both the return value as well as an error code.
 * Introduce and use the `Stereo` type for all function returning left and right eye data.

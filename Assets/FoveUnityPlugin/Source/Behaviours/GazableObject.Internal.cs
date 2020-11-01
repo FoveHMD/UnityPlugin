@@ -8,7 +8,7 @@ namespace Fove.Unity
     public partial class GazableObject : MonoBehaviour
     {
         private static int instanceCount = 0;
-        private static Dictionary<int, GazableObject> idToGazableObject = new Dictionary<int, GazableObject>();
+        private static readonly Dictionary<int, GazableObject> idToGazableObject = new Dictionary<int, GazableObject>();
 
         protected int id = Fove.GazableObject.IdInvalid;
 
@@ -67,9 +67,9 @@ namespace Fove.Unity
 
             UpdatePose();
 
-            var error = FoveManager.Headset.UpdateGazableObject(id, ref pose);
-            if (error != ErrorCode.None)
-                Debug.LogError("Failed to update GazableObject. Error: " + error);
+            var result = FoveManager.Headset.UpdateGazableObject(id, ref pose);
+            if (result.Failed)
+                Debug.LogError("Failed to update GazableObject. Error: " + result.error);
         }
 
         protected virtual void FixedUpdate()
@@ -123,9 +123,9 @@ namespace Fove.Unity
         {
             if (isIdValid)
             {
-                var errorCode = FoveManager.Headset.RemoveGazableObject(id);
-                if (errorCode != ErrorCode.None)
-                    Debug.LogError("GazableObject: remove gazable object returned error: " + errorCode);
+                var result = FoveManager.Headset.RemoveGazableObject(id);
+                if (result.Failed)
+                    Debug.LogError("GazableObject: remove gazable object returned error: " + result.error);
 
                 idToGazableObject.Remove(id);
             }
@@ -197,9 +197,9 @@ namespace Fove.Unity
                 pose = pose,
             };
 
-            var error = FoveManager.Headset.RegisterGazableObject(gazableObj);
-            if (error != ErrorCode.None)
-                Debug.LogError("Failed to create GazableObject. Error: " + error);
+            var result = FoveManager.Headset.RegisterGazableObject(gazableObj);
+            if (result.Failed)
+                Debug.LogError("Failed to create GazableObject. Error: " + result.error);
         }
 
         private static bool IsColliderSupported(Collider collider)

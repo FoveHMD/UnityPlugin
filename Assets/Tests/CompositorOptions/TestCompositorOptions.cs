@@ -7,6 +7,13 @@ public class TestCompositorOptions : MonoBehaviour {
     public FoveInterface fove;
     public Text status;
     public Renderer checkerRenderer;
+
+    public int targetFPS = 20;
+
+    void Start ()
+    {
+        Application.targetFrameRate = targetFPS;
+    }
     
     // Update is called once per frame
     void Update () {
@@ -33,5 +40,10 @@ public class TestCompositorOptions : MonoBehaviour {
     private static string GetStatusText(bool disabled)
     {
         return disabled ? "OFF" : "ON";
+    }
+
+    void OnApplicationQuit()
+    {
+        Application.targetFrameRate = -1;
     }
 }

@@ -30,7 +30,7 @@ public class CustomCalibrationRenderer : MonoBehaviour
 
         // tick and pull calibration state
         var result = FoveManager.TickEyeTrackingCalibration(Time.deltaTime, isVisible);
-        if (result.HasError)
+        if (result.Failed)
         {
             Debug.LogError("Failed to tick calibration. Error:" + result.error);
             spriteRenders[0].enabled = false;

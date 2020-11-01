@@ -15,47 +15,47 @@ namespace Fove.Unity
         /// <summary>
         /// Get a reference to the Fove headset class.
         /// </summary>
-        public static Headset Headset { get { return Instance.m_headset; } }
+        public static Headset Headset { get { return Instance.headset; } }
 
         /// <summary>
         /// Use this to pause a coroutine until the HMD hardware is connected
-        /// See <see cref="IsHardwareConnected(bool)"/> for more details.
+        /// See <see cref="IsHardwareConnected()"/> for more details.
         /// </summary>
         public static IEnumerator WaitForHardwareConnected { get { return m_sWaitForHardwareConnected; } }
 
         /// <summary>
         /// Use this to pause a coroutine until the HMD hardware is disconnected
-        /// See <see cref="IsHardwareConnected(bool)"/> for more details.
+        /// See <see cref="IsHardwareConnected()"/> for more details.
         /// </summary>
         public static IEnumerator WaitForHardwareDisconnected { get { return m_sWaitForHardwareDisconnected; } }
 
         /// <summary>
         /// Use this to pause a coroutine until the HMD hardware is ready to be used.
-        /// See <see cref="IsHardwareReady(bool)"/> for more details.
+        /// See <see cref="IsHardwareReady()"/> for more details.
         /// </summary>
         public static IEnumerator WaitForHardwareReady { get { return m_sWaitForHardwareReady; } }
 
         /// <summary>
         /// Use this to pause a coroutine until a eye tracking calibration process is started.
-        /// See <see cref="IsEyeTrackingCalibrating(bool)"/> for more details.
+        /// See <see cref="IsEyeTrackingCalibrating()"/> for more details.
         /// </summary>
         public static IEnumerator WaitForEyeTrackingCalibrationStart { get { return m_sWaitForCalibrationStart; } }
 
         /// <summary>
         /// Use this to pause a coroutine until a eye tracking calibration process is ended.
-        /// See <see cref="IsEyeTrackingCalibrating(bool)"/> for more details.
+        /// See <see cref="IsEyeTrackingCalibrating()"/> for more details.
         /// </summary>
         public static IEnumerator WaitForEyeTrackingCalibrationEnd { get { return m_sWaitForCalibrationEnd; } }
 
         /// <summary>
         /// Use this to pause a coroutine until the eye tracking system is calibrated.
-        /// See <see cref="IsEyeTrackingCalibrated(bool)"/> for more details.
+        /// See <see cref="IsEyeTrackingCalibrated()"/> for more details.
         /// </summary>
         public static IEnumerator WaitForEyeTrackingCalibrated { get { return m_sWaitForCalibrationCalibrated; } }
 
         /// <summary>
         /// Use this to pause a coroutine until the user is wearing the headset.
-        /// See <see cref="IsUserPresent(bool)"/> for more details.
+        /// See <see cref="IsUserPresent()"/> for more details.
         /// </summary>
         public static IEnumerator WaitForUser { get { return m_sWaitForUser; } }
 
@@ -92,22 +92,22 @@ namespace Fove.Unity
         public static event Action<CalibrationState> EyeTrackingCalibrationEnded;
 
         /// <summary>
-        /// Triggered when the user starts or stops fixating (e.g. when the value returned by <see cref="IsGazeFixated(bool)"/> changes).
+        /// Triggered when the user starts or stops fixating (e.g. when the value returned by <see cref="IsUserShiftingAttention()"/> changes).
         /// </summary>
-        public static event Action<bool> IsGazeFixatedChanged;
+        public static event Action<bool> IsUserShiftingAttentionChanged;
 
         /// <summary>
-        /// Triggered when the user eye closed status changes (e.g. when the value returned by <see cref="CheckEyesClosed(bool)"/> changes).
+        /// Triggered when the user eye state status changes (e.g. when the value returned by <see cref="GetEyeState(Eye)"/> changes).
         /// </summary>
-        public static event Action<Eye> EyesClosedChanged;
+        public static event Action<Eye, EyeState> EyeStateChanged;
 
         /// <summary>
-        /// Triggered when the user put or remove the headset (e.g. when the value returned by <see cref="IsUserPresent(bool)"/> changes).
+        /// Triggered when the user put or remove the headset (e.g. when the value returned by <see cref="IsUserPresent()"/> changes).
         /// </summary>
         public static event Action<bool> UserPresenceChanged;
 
         /// <summary>
-        /// Triggered when the HMD adjusment Gui visibility status changed (e.g. when the value returned by <see cref="IsHmdAdjustementGuiVisible(bool)"/> changes).
+        /// Triggered when the HMD adjusment Gui visibility status changed (e.g. when the value returned by <see cref="IsHmdAdjustementGuiVisible()"/> changes).
         /// </summary>
         public static event Action<bool> HmdAdjustmentGuiVisibilityChanged;
 
@@ -116,8 +116,8 @@ namespace Fove.Unity
         /// </summary>
         public static float WorldScale
         {
-            get { return m_worldScale; }
-            set { m_worldScale = Mathf.Max(float.Epsilon, value); }
+            get { return Instance.worldScale; }
+            set { Instance.worldScale = Mathf.Max(float.Epsilon, value); }
         }
 
         /// <summary>
@@ -125,8 +125,8 @@ namespace Fove.Unity
         /// </summary>
         public static float RenderScale
         {
-            get { return m_renderScale; }
-            set { m_renderScale = Mathf.Max(float.Epsilon, value); }
+            get { return Instance.renderScale; }
+            set { Instance.renderScale = Mathf.Max(float.Epsilon, value); }
         }
 
         /// <summary>
@@ -140,245 +140,793 @@ namespace Fove.Unity
         }
 
         /// <summary>
-        /// Check which eyes are closed. Returns Left/Right/Both/None accordingly.
+        /// Query whether or not a headset is physically connected to the computer
         /// </summary>
-        /// <returns>The eyes that are closed</returns>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        public static Result<Eye> CheckEyesClosed(bool immediate = false)
+        /// <returns>Whether or not a headset is present on the machine, and the call success status.</returns>
+        public static Result<bool> IsHardwareConnected()
         {
-            if (!immediate)
-                return m_sEyeClosed;
-
-            Result<Eye> result;
-            result.error = Headset.CheckEyesClosed(out result.value);
-            if (result.HasError)
-                result.value = m_sEyeClosed;
-
-            return result;
+            return Headset.IsHardwareConnected();
         }
 
         /// <summary>
-        /// Returns the pupil dilation value as a ratio relative to a baseline. 1 means average. Range: 0 to Infinity
+        /// Query whether the headset has all requested features booted up and running (position tracking, eye tracking,
+        /// orientation, etc...).
         /// </summary>
-        /// <returns>The average pupil dilation value of the two eyes</returns>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        public static Result<float> GetPupilDilation(bool immediate = false)
+        /// <returns>Whether you can expect valid data from all headset functions, and the call success status.</returns>
+        public static Result<bool> IsHardwareReady()
         {
-            if (!immediate)
-                return m_sPupilDilation;
-
-            Fove.GazeConvergenceData convergence;
-            var error = Headset.GetGazeConvergence(out convergence);
-
-            if (error != ErrorCode.None)
-                return new Result<float>(m_sPupilDilation, error);
-
-            return new Result<float>(convergence.pupilDilation);
+            return Headset.IsHardwareReady();
         }
 
         /// <summary>
-        /// Returns <c>true</c> when the user is looking at something (fixation or pursuit) and <c>false</c> when saccading between objects.
-        /// This could be used to suppress eye input during large eye motions. 
+        /// Query whether the motion tracking hardware (IMU) has started
         /// </summary>
-        /// <returns>True if the user gaze is fixated on something, false otherwise.</returns>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        public static Result<bool> IsGazeFixated(bool immediate = false)
+        /// <returns>Whether you can expect valid orientation pose data, and the call success status.</returns>
+        public static Result<bool> IsMotionReady()
         {
-            if(!immediate)
-                return m_sIsGazeFixated;
-
-            Fove.GazeConvergenceData convergence;
-            var error = Headset.GetGazeConvergence(out convergence);
-
-            if (error != ErrorCode.None)
-                return new Result<bool>(m_sIsGazeFixated, error);
-
-            return new Result<bool>(convergence.attention);
+            return Headset.IsMotionReady();
         }
 
         /// <summary>
-        /// Returns <c>true</c> when the user is wearing the headset
+        /// Check whether the runtime and client versions are compatible and are expected to work correctly.
         /// </summary>
-        /// <remarks>When user is not present Eye tracking values shouldn't be used as invalid.</remarks>
-        /// <returns>True if the user has been detected, false otherwise</returns>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        public static Result<bool> IsUserPresent(bool immediate = false)
+        /// <returns>Any errors that occurred when checking the runtime and client versions, or None if 
+        /// everything seems fine.</returns>
+        /// <remarks>Newer runtime versions are designed to be compatible with older client versions, however new
+        /// client versions are not designed to be compatible with old runtime versions.</remarks>
+        public static Result CheckSoftwareVersions()
         {
-            if (!immediate)
-                return m_sIsUserPresent;
+            return Headset.CheckSoftwareVersions();
+        }
 
-            bool userPresent;
-            var error = Headset.IsUserPresent(out userPresent);
+        /// <summary>
+        /// Get the version of the Fove client library. This returns "[major].[minor].[build]".
+        /// </summary>
+        /// <returns>A string representing the client library version, and the call success status</returns>
+        public static Result<string> GetClientVersion()
+        {
+            var result = Headset.GetSoftwareVersions();
 
-            if (error != ErrorCode.None)
-                return new Result<bool>(m_sIsUserPresent, error);
+            var versionString = result.IsValid
+                ? "" + result.value.clientMajor + "." + result.value.clientMinor + "." + result.value.clientBuild
+                : "Unknown";
 
-            return new Result<bool>(userPresent);
+            return new Result<string>() { value = versionString, error = result.error };
+        }
+
+        /// <summary>
+        /// Get the version of the installed runtime service. This returns "[major].[minor].[build]".
+        /// </summary>
+        /// <returns>A string representing the runtime library version, and the call success status</returns>
+        public static Result<string> GetRuntimeVersion()
+        {
+            var result = Headset.GetSoftwareVersions();
+
+            var versionString = result.IsValid
+                ? "" + result.value.runtimeMajor + "." + result.value.runtimeMinor + "." + result.value.runtimeBuild
+                : "Unknown";
+
+            return new Result<string>() { value = versionString, error = result.error };
+        }
+
+        /// <summary>
+        /// Register a headset capability independently from the <see cref="FoveInterface"/> needs.
+        /// </summary>
+        /// <param name="capabilities">The capabilities to add</param>
+        public static void RegisterCapabilities(ClientCapabilities capabilities)
+        {
+            Instance.enforcedCapabilities |= capabilities;
+            Instance.UpdateCapabilities();
+        }
+
+        /// <summary>
+        /// Unregister a capability previously registered with <see cref="RegisterCapabilities(ClientCapabilities)"/>.
+        /// </summary>
+        /// <remarks>The capability will be effectively unregistered only if not needed by the <see cref="FoveInterface"/> game instances</remarks>
+        /// <param name="capabilities">The capabilities to remove </param>
+        public static void UnregisterCapabilities(ClientCapabilities capabilities)
+        {
+            Instance.enforcedCapabilities &= ~capabilities;
+            Instance.UpdateCapabilities();
+        }
+
+        /// <summary>
+        /// Get the direction of the gaze of the specified eye, in the HMD coordinate space.
+        /// <para>
+        /// To get the eye gaze in world space coordinate use the <see cref="FoveInterface.GetGazeVector()" instead/>. 
+        /// </para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <param name="eye">Specify which eye to get the value for</param>
+        /// <returns>
+        /// The 3D gaze vector of the specified eye in the HMD coordinate space, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<Vector3> GetHmdGazeVector(Eye eye)
+        {
+            var result = Headset.GetGazeVector(eye);
+            return new Result<Vector3>(result.value.ToVector3(), result.error);
+        }
+
+        /// <summary>
+        /// Returns the user's 2D gaze position on the screens seen through the HMD's lenses
+        /// <para>
+        /// The use of lenses and distortion correction creates a screen in front of each eye.
+        /// This function returns 2D vectors representing where on each eye's screen the user
+        /// is looking.
+        /// </para>
+        /// <para>
+        /// The vectors are normalized in the range [-1, 1] along both X and Y axes such that the
+        /// following points are true. Center: (0, 0), Bottom-Left: (-1, -1),Top-Right: (1, 1).
+        /// </para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <param name="eye">Specify which eye to get the value for</param>
+        /// <returns>
+        /// The 2D screen position of the specified eye gaze, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<Vector3> GetGazeScreenPosition(Eye eye)
+        {
+            var result = Headset.GetGazeVector(eye);
+            return new Result<Vector3>(result.value.ToVector3(), result.error);
+        }
+
+        /// <summary>
+        /// Returns eyes gaze ray resulting from the two eye gazes combined together, in the HMD coordinate space.
+        /// <para>
+        /// To get individual eye rays use <see cref="GetHmdGazeVector(Eye)"/> instead
+        /// </para>
+        /// <para>
+        /// To get the user gaze in world space coordinate use the <see cref="FoveInterface.GetCombinedGazeRay()"/> instead. 
+        /// </para>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// The combined gaze ray in the HMD coordinate space, and the call success status: 
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<Ray> GetHmdCombinedGazeRay()
+        {
+            var result = Headset.GetCombinedGazeRay();
+            return new Result<Ray>(result.value.ToRay(), result.error);
+        }
+
+        /// <summary>
+        /// Returns eyes gaze depth resulting from the two eye gazes combined together
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.GazeDepth"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// The depth of the combine Gaze, and the call success status: 
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<float> GetCombinedGazeDepth()
+        {
+            var result = Headset.GetCombinedGazeDepth();
+            return new Result<float>(Instance.renderScale * result.value, result.error);
+        }
+
+        /// <summary>
+        /// Returns whether the user is shifting its attention between objects or looking at something specific (fixation or pursuit).
+        /// <para>This can be used to ignore eye data during large eye motions when the user is not looking at anything specific.</para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.UserAttentionShift"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// Whether the user is shifting attention, and the call success status: 
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<bool> IsUserShiftingAttention()
+        {
+            return Headset.IsUserShiftingAttention();
+        }
+
+        /// <summary>
+        /// Returns the state of an individual eye
+        /// <para>This can be used to ignore eye data during large eye motions when the user is not looking at anything specific.</para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <param name="eye">Specify which eye to get the value for</param>
+        /// <returns>
+        /// The state of the specified eye, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<EyeState> GetEyeState(Eye eye)
+        {
+            return Headset.GetEyeState(eye);
+        }
+
+        /// <summary>
+        /// Returns whether eye tracking is calibrated and usable
+        /// <para></para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// Whether the eye tracking system is calibrated, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// </list>
+        /// </returns>
+        public static Result<bool> IsEyeTrackingCalibrated()
+        {
+            return Headset.IsEyeTrackingCalibrated();
+        }
+
+        /// <summary>
+        /// Query whether eye tracking is currently calibrating, meaning that the user likely
+        /// cannot see your game due to the calibration process. While this is true, you should
+        /// refrain from showing any interactions that would respond to eye gaze.
+        /// <para>
+        /// You should carefully check the value returned by this function as the calibration process
+        /// can be manually started by the user at any time during your game. 
+        /// Other than user manual triggering, times when calibration will occur are:
+        /// <list type="number">
+        /// <item>At the launch of you application, if you check 'Force Calibration' in the fove settings.</item>
+        /// <item>Whenever you call <see cref="StartEyeTrackingCalibration(bool, CalibrationMethod)"/>.</item>
+        /// </list>
+        /// </para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// Whether the eye tracking system is calibrating, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// </list>
+        /// </returns>
+        public static Result<bool> IsEyeTrackingCalibrating()
+        {
+            return Headset.IsEyeTrackingCalibrating();
+        }
+
+        /// <summary>
+        /// Returns whether the eye tracking system is currently calibrated for glasses.
+        /// <para>
+        /// This basically indicates if the user was wearing glasses during the calibration or not.
+        /// This function returns <see cref="ErrorCode.Data_Uncalibrated"/> if the eye tracking system 
+        /// has not been calibrated yet
+        /// </para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// Whether the eye tracking system is calibrated for glasses, and the call success status:
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Uncalibrated"/> if the eye tracking system is currently uncalibrated</item>
+        /// </returns>
+        public static Result<bool> IsEyeTrackingCalibratedForGlasses()
+        {
+            return Headset.IsEyeTrackingCalibratedForGlasses();
         }
 
         /// <summary>
         /// Returns <c>true</c> when the GUI that asks the user to adjust their headset is being displayed
+        /// <para>
+        /// It is best practice to pause the gameplay of the application when the HMD adjustment GUI is being displayed.
+        /// </para>
         /// </summary>
-        /// <remarks>It is best practice to pause the gameplay of the application when the HMD adjustment GUI is being displayed.</remarks>
-        /// <returns>True if the HMD adjustment GUI is currently displayed to the user, false otherwise</returns>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        public static Result<bool> IsHmdAdjustementGuiVisible(bool immediate = false)
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// Whether the Headset position adjustment GUI is visible on the screen, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// </list>
+        /// </returns>
+        public static Result<bool> IsHmdAdjustmentGuiVisible()
         {
-            if (!immediate)
-                return m_sIsHmdAdjustmentVisible;
+            return Headset.IsHmdAdjustmentGuiVisible();
+        }
 
-            bool guiVisible;
-            var error = Headset.IsHmdAdjustmentGuiVisible(out guiVisible);
+        /// <summary>
+        /// Returns whether or not the GUI that asks the user to adjust their headset was hidden by timeout
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// Whether the Headset position adjustment GUI has timeout, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// </list>
+        /// </returns>
+        public static Result<bool> HasHmdAdjustmentGuiTimeout()
+        {
+            return Headset.HasHmdAdjustmentGuiTimeout();
+        }
 
-            if (error != ErrorCode.None)
-                return new Result<bool>(m_sIsHmdAdjustmentVisible, error);
 
-            return new Result<bool>(guiVisible);
+        /// <summary>
+        /// Returns whether eye tracking is actively tracking eyes
+        /// <para>In other words, it returns `true` only when the hardware is ready and eye tracking is calibrated.</para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// Whether the eye tracking system is ready, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// </list>
+        /// </returns>
+        public static Result<bool> IsEyeTrackingReady()
+        {
+            return Headset.IsEyeTrackingReady();
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> when the user is wearing the headset
+        /// <para>When user is not present Eye tracking values shouldn't be used as invalid.</para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.UserPresence"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// Whether the user is wearing the headset, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<bool> IsUserPresent()
+        {
+            return Headset.IsUserPresent();
+        }
+
+        /// <summary>
+        /// Returns the eyes camera image texture
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyesImage"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// The Eye camera image, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreadable"/> if the data couldn't be read properly from memory</item>
+        /// </list>
+        /// </returns>
+        public static Result<Texture2D> GetEyesImage()
+        {
+            return Instance.eyesTexture;
+        }
+
+        /// <summary>
+        /// Returns the user IPD (Inter Pupillary Distance), in meters
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.UserIPD"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// The user IPD value, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<float> GetUserIPD()
+        {
+            return Headset.GetUserIPD();
+        }
+
+        /// <summary>
+        /// Returns the user IOD (Inter Occular Distance), in meters
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.UserIOD"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// The user IOD value, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<float> GetUserIOD()
+        {
+            return Headset.GetUserIOD();
+        }
+
+        /// <summary>
+        /// Returns the user pupils radius, in meters
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.PupilRadius"/> should be registered to use this function.</remarks>
+        /// <param name="eye">Specify which eye to get the value for</param>
+        /// <returns>
+        /// The pupil radius of the specified eye, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<float> GetPupilRadius(Eye eye)
+        {
+            return Headset.GetPupilRadius(eye);
+        }
+
+        /// <summary>
+        /// Returns the user iris radius, in meters
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.IrisRadius"/> should be registered to use this function.</remarks>
+        /// <param name="eye">Specify which eye to get the value for</param>
+        /// <returns>
+        /// The iris radius of the specified eye, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<float> GetIrisRadius(Eye eye)
+        {
+            return Headset.GetIrisRadius(eye);
+        }
+
+        /// <summary>
+        /// Returns the user eyeball radius, in meters
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeballRadius"/> should be registered to use this function.</remarks>
+        /// <param name="eye">Specify which eye to get the value for</param>
+        /// <returns>
+        /// The eyeball radius of the specified eye, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<float> GetEyeballRadius(Eye eye)
+        {
+            return Headset.GetEyeballRadius(eye);
+        }
+
+        /// <summary>
+        /// Returns the user eye torsion, in degrees
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTorsion"/> should be registered to use this function.</remarks>
+        /// <param name="eye">Specify which eye to get the value for</param>
+        /// <returns>
+        /// The torsion angle of the specified eye, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<float> GetEyeTorsion(Eye eye)
+        {
+            return Headset.GeEyeTorsion(eye);
+        }
+
+        /// <summary>
+        /// Returns the outline shape of the specified user eye in the Eyes camera image.
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeShape"/> should be registered to use this function.</remarks>
+        /// <param name="eye">Specify which eye to get the value for</param>
+        /// <returns>
+        /// The shape of the specified eye, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<EyeShape> GetEyeShape(Eye eye)
+        {
+            var result = Headset.GetEyeShape(eye);
+            return new Result<EyeShape>((EyeShape)result.value, result.error);
+        }
+
+        /// <summary>
+        /// Starts eye tracking calibration
+        /// <para>
+        /// After calling this function you should assume that the user cannot see your game until 
+        /// <see cref="IsEyeTrackingCalibrating"/> returns false.
+        /// </para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <param name="calibrationOptions">Specify the calibration options for the new calibration process to run</param>
+        /// <returns>
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success.</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.License_FeatureAccessDenied"/> if any of the enabled options require a license that is not active on this machine</item>
+        /// </list>
+        /// </returns>
+        public static Result StartEyeTrackingCalibration(CalibrationOptions calibrationOptions = null)
+        {
+            return Headset.StartEyeTrackingCalibration(calibrationOptions);
+        }
+
+        /// <summary>
+        /// Stops eye tracking calibration if it's running, does nothing if it's not running
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>        /// <returns>
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success.</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// </list>
+        /// </returns>
+        public static Result StopEyeTrackingCalibration()
+        {
+            return Headset.StopEyeTrackingCalibration();
+        }
+
+        /// <summary>
+        /// Get the state of the currently running calibration process
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// The eye tracking system calibration state, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// </list>
+        /// </returns>
+        public static Result<CalibrationState> GetEyeTrackingCalibrationState()
+        {
+            return Headset.GetEyeTrackingCalibrationState();
+        }
+
+        /// <summary>
+        /// Tick the current calibration process and retrieve data information to render the current calibration state.
+        /// <para>
+        /// This function is how the client declares to the calibration system that is available to render calibration.
+        /// The calibration system determines which of the available renderers has the highest priority,
+        /// and returns to that render the information needed to render calibration via the outTarget parameter.
+        /// Even while ticking this, you may get no result because either no calibration is running,
+        /// or a calibration is running but some other higher priority renderer is doing the rendering.
+        /// </para>
+        /// <para>It is perfectly fine not to call this function, in which case the Fove service will automatically render the calibration process for you.</para>
+        /// </summary>
+        /// <remarks>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks></remarks>
+        /// <param name="deltaTime">The time elapsed since the last rendered frame</param>
+        /// <param name="isVisible">Indicate to the calibration system that something is being drawn to the screen.
+        /// This allows the calibration renderer to take as much time as it wants to display success/failure messages
+        /// and animate away before the calibration processes is marked as completed by the `IsEyeTrackingCalibrating` function.
+        /// </param>
+        /// <returns>
+        /// The current calibration data, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success.</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Calibration_OtherRendererPrioritized"/> if another process has currently the priority for rendering calibration process</item>
+        /// <item><see cref="ErrorCode.License_FeatureAccessDenied"/> if you don't have the license level required to access this feature</item>
+        /// </list>
+        /// </returns>
+        public static Result<CalibrationData> TickEyeTrackingCalibration(float deltaTime, bool isVisible)
+        {
+            var result = Headset.TickEyeTrackingCalibration(deltaTime, isVisible);
+            return new Result<CalibrationData>((CalibrationData)result.value, result.error);
         }
 
         /// <summary>
         /// Get the game object currently gazed by the user.
+        /// <para>
+        /// In order to be detected game object need to have the <see cref="GazableObject"/> component attached.
+        /// If the user is currently not looking at any specific object <c>null</c> is returned.
+        /// </para>
         /// </summary>
-        /// <returns>The gazed game object if any. Null otherwise.</returns>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        public static Result<GameObject> GetGazedObject(bool immediate = false)
+        /// <remarks>
+        /// To use this function, you need to register the <see cref="ClientCapabilities.GazedObjectDetection"/> first.
+        /// </remarks>
+        /// <returns>
+        /// The game object currently gazed at, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<GameObject> GetGazedObject()
         {
-            var resultId = m_sGazedObjectId;
-
-            if (immediate)
-            {
-                Fove.GazeConvergenceData convergence;
-                var error = Headset.GetGazeConvergence(out convergence);
-                if (error != ErrorCode.None)
-                    return new Result<GameObject>(null, error);
-
-                resultId = new Result<int>(convergence.gazedObjectId);
-            }
-
-            var gazableObject = GazableObject.FindGazableObject(resultId);
+            var result = Headset.GetGazedObjectId();
+            var gazableObject = GazableObject.FindGazableObject(result.value);
             var gameObject = gazableObject != null ? gazableObject.gameObject : null;
-
-            return new Result<GameObject>(gameObject, resultId.error);
+            return new Result<GameObject>(gameObject, result.error);
         }
 
         /// <summary>
-        /// Get the headset current pose in local coordinate space.
+        /// Reset the headset orientation.
+        /// <para>
+        /// This sets the HMD's current rotation as a "zero" orientation, essentially resetting their
+        /// orientation to that set in the editor.
+        /// </para>
         /// </summary>
-        /// <remarks>
-        /// This value is automatically applied to the interface's GameObject and is only exposed here for reference and out-of-sync access
-        /// </remarks>
-        /// <returns>The pose in the headset local coordinate space</returns>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        public static Result<Pose> GetHMDPose(bool immediate = false)
+        /// <remarks><see cref="ClientCapabilities.OrientationTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// </list>
+        /// </returns>
+        public static Result TareOrientation()
         {
-            if (!immediate)
-                return new Result<Pose>(m_sLastPose);
+            return Headset.TareOrientationSensor();
+        }
 
-            Result<Pose> result;
-            result.error = Headset.GetLatestPose(out result.value);
-            if (result.HasError)
-                result.value = m_sLastPose;
+        /// <summary>
+        /// Returns whether position tracking hardware has started
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.PositionTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// Whether the position tracking headset is ready, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// </list>
+        /// </returns>
+        public static Result<bool> IsPositionReady()
+        {
+            return Headset.IsPositionReady();
+        }
 
-            return result;
+        /// <summary>
+        /// Reset the headset position.
+        /// <para>
+        /// This sets the HMD's current position relative to the tracking camera as a "zero" position,
+        /// essentially jumping the headset back to the interface's origin.
+        /// </para>
+        /// </summary>        /// <remarks><see cref="ClientCapabilities.PositionTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// </list>
+        /// </returns>
+        public static Result TarePosition()
+        {
+            return Headset.TarePositionSensors();
         }
 
         /// <summary>
         /// Get the headset current rotation in local coordinate space.
         /// </summary>
         /// <remarks>
-        /// This value is automatically applied to the interface's GameObject and is only exposed  here for reference and out-of-sync access
+        /// This value is automatically applied to the interface's GameObject and is only exposed  here for reference
         /// </remarks>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        /// <returns>The rotation in the headset local coordinate space</returns>
-        public static Result<Quaternion> GetHMDRotation(bool immediate = false)
+        /// <returns>
+        /// The Headset pose, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<Quaternion> GetHmdRotation()
         {
-            if (!immediate)
-                return new Result<Quaternion>(m_sHeadRotation);
-
-            var poseResult = GetHMDPose(true);
-            var orientation = poseResult.value.orientation.ToQuaternion(); // contains the same value as m_sHeadRotation in the case of failure
-            return new Result<Quaternion>(orientation, poseResult.error);
+            return new Result<Quaternion>(Instance.headRotation);
         }
 
         /// <summary>
         /// Get the headset current position in local coordinates.
         /// </summary>
         /// <remarks>
-        /// This value is automatically applied to the interface's GameObject and is only exposed here for reference and out-of-sync access
+        /// This value is automatically applied to the interface's GameObject and is only exposed here for reference
         /// </remarks>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        /// <returns>The position in the headset local coordinate space.</returns>
-        public static Result<Vector3> GetHMDPosition(bool immediate = false)
+        /// <param name="isUserStanding">Indicate if you want to query the seating or standing position</param>
+        /// <returns>
+        /// The Headset pose, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<Vector3> GetHmdPosition(bool isUserStanding)
         {
-            if (!immediate)
-                return new Result<Vector3>(m_sHeadPosition);
-
-            var poseResult = GetHMDPose(true);
-            var position = m_worldScale * poseResult.value.position.ToVector3();
-            return new Result<Vector3>(position, poseResult.error);
+            return new Result<Vector3>(isUserStanding ? Instance.standingPosition : Instance.headPosition);
         }
 
         /// <summary>
-        /// Returns user's eyes current convergence point in local coordinate space.
+        /// Returns the position camera image texture
         /// </summary>
-        /// <remarks>
-        /// To get user gaze in world space coordinate use the <see cref="FoveInterface.GetGazeConvergence(bool)"/>. 
-        /// This value is exposed here only for reference and out-of-sync access
-        /// </remarks>
-        /// <returns>The gaze convergence information in the headset local coordinate space.</returns>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        /// <seealso cref="FoveInterface.GetGazeConvergence(bool)"/>
-        public static Result<GazeConvergenceData> GetHMDGazeConvergence(bool immediate = false)
+        /// <remarks><see cref="ClientCapabilities.PositionImage"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// The position camera image, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreadable"/> if the data couldn't be read properly from memory</item>
+        /// </list>
+        /// </returns>
+        public static Result<Texture2D> GetPositionImage()
         {
-            if (!immediate)
-                return m_sConvergenceData;
-
-            Fove.GazeConvergenceData convergence;
-            var error = Headset.GetGazeConvergence(out convergence);
-            if (error != ErrorCode.None)
-                return new Result<GazeConvergenceData>(m_sConvergenceData, error);
-
-            return new Result<GazeConvergenceData>((GazeConvergenceData)convergence);
-        }
-
-        /// <summary>
-        /// Get the direction the left and right eyes are currently looking at.
-        /// </summary>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        /// <returns>The direction of the left and right eye gaze in the headset local coordinate space.</returns>
-        public static Result<Stereo<Vector3>> GetEyeVectors(bool immediate = false)
-        {
-            if (!immediate)
-                return m_sEyeVectors;
-
-            GazeVector lGaze, rGaze;
-            var error = Headset.GetGazeVectors(out lGaze, out rGaze);
-            if (error != ErrorCode.None)
-                return new Result<Stereo<Vector3>>(m_sEyeVectors, error);
-
-            var eyeVectors = new Stereo<Vector3>(lGaze.vector.ToVector3(), rGaze.vector.ToVector3());
-            return new Result<Stereo<Vector3>>(eyeVectors);
-        }
-
-        /// <summary>
-        /// Get the offsets to the origin of the headset local space of the left and right eyes.
-        /// </summary>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        /// <returns>The position of left and right eye in the headset local coordinate space.</returns>
-        public static Result<Stereo<Vector3>> GetEyeOffsets(bool immediate = false)
-        {
-            if (!immediate)
-                return m_sEyeOffsets;
-
-            Matrix44 lEyeMx, rEyeMx;
-            var error = Headset.GetEyeToHeadMatrices(out lEyeMx, out rEyeMx);
-            if (error != ErrorCode.None)
-                return new Result<Stereo<Vector3>>(m_sEyeOffsets, error);
-
-            Vector3 eyeOffsetLeft, eyeOffsetRight;
-            GetEyeOffsetVector(ref lEyeMx, out eyeOffsetLeft);
-            GetEyeOffsetVector(ref lEyeMx, out eyeOffsetRight);
-            return new Result<Stereo<Vector3>>(new Stereo<Vector3>(eyeOffsetLeft, eyeOffsetRight));
+            return Instance.positionTexture;
         }
 
         /// <summary>
@@ -391,106 +939,61 @@ namespace Fove.Unity
         /// </remarks>
         /// <param name="near">Distance to the near-clip plane of the projection frustum</param>
         /// <param name="far">Distance to the far-clip plane of the projection frustum</param>
-        /// <returns>The left and right eye projection matrices</returns>
-        public static Result<Stereo<Matrix4x4>> GetProjectionMatrices(float near, float far)
-        {
-            Matrix44 projLeft, projRight;
-            var error = Headset.GetProjectionMatricesRH(near, far, out projLeft, out projRight);
-            var matrices = new Stereo<Matrix4x4>(projLeft.ToMatrix4x4(), projRight.ToMatrix4x4());
-            return new Result<Stereo<Matrix4x4>>(matrices, error);
-        }
-
-        /// <summary>
-        /// Reset the headset orientation.
-        /// <para>
-        /// This sets the HMD's current rotation as a "zero" orientation, essentially resetting their
-        /// orientation to that set in the editor.
-        /// </para>
-        /// </summary>
-        /// <returns>The result of the operation</returns>
-        public static Result TareOrientation()
-        {
-            var error = Headset.TareOrientationSensor();
-            return new Result(error);
-        }
-
-        /// <summary>
-        /// Reset the headset position.
-        /// <para>
-        /// This sets the HMD's current position relative to the tracking camera as a "zero" position,
-        /// essentially jumping the headset back to the interface's origin.
-        /// </para>
-        /// </summary>
-        /// <returns>The result of the operation</returns>
-        public static Result TarePosition()
-        {
-            var error = Headset.TarePositionSensors();
-            return new Result(error);
-        }
-
-        /// <summary>
-        /// Start the eye tracking calibration process.
-        /// </summary>
-        /// <remarks>
-        /// After calling this function you should assume that the user cannot see your game until 
-        /// <see cref="IsEyeTrackingCalibrating"/> returns false.
-        /// </remarks>
-        /// <param name="calibrationOptions">Specify the calibration options for the new calibration process to run</param>
-        /// <returns>The result of the operation</returns>
-        public static Result StartEyeTrackingCalibration(CalibrationOptions calibrationOptions = null)
-        {
-            var error = Headset.StartEyeTrackingCalibration(calibrationOptions);
-            return new Result(error);
-        }
-
-        /// <summary>
-        /// Stops a running calibration process. Does nothing if no calibration process is currently running.
-        /// </summary>
-        /// <returns>The result of the operation</returns>
-        public static Result StopEyeTrackingCalibration()
-        {
-            var error = Headset.StopEyeTrackingCalibration();
-            return new Result(error);
-        }
-
-        /// <summary>
-        /// Return the state of the current calibration process.
-        /// </summary>
-        public static Result<CalibrationState> GetEyeTrackingCalibrationState()
-        {
-            return m_sCalibationState;
-        }
-
-        /// <summary>
-        /// Tick the current calibration process and retrieve data information to render the current calibration state.
-        /// <para>
-        /// This function is how the client declares to the calibration system that is available to render calibration.
-        /// The calibration system determines which of the available renderers has the highest priority,
-        /// and returns to that render the information needed to render calibration via the outTarget parameter.
-        /// Even while ticking this, you may get no result because either no calibration is running,
-        /// or a calibration is running but some other higher priority renderer is doing the rendering.
-        /// </para>
-        /// <para>
-        /// Note that it is perfectly fine not to call this function, in which case the Fove service will automatically render the calibration process for you.
-        /// </para>
-        /// </summary>
-        /// <param name="deltaTime">The time elapsed since the last rendered frame</param>
-        /// <param name="isVisible">Indicate to the calibration system that something is being drawn to the screen. 
-        /// This allows the calibration renderer to take as much time as it wants to display success/failure messages 
-        /// and animate away before the calibration processes is marked as completed by the `IsEyeTrackingCalibrating` function.</param>
         /// <returns>
-        /// The calibration current state information or one of the following errors:
+        /// The 4x4 projection left and right matrices (left-handed), and the call success status:
         /// <list type="bullet">
-        /// <item>License_FeatureAccessDenied: if you don't have the license level required to access this feature</item>
-        /// <item>Calibration_OtherRendererPrioritized: if another process has currently the priority for rendering calibration process</item>
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
         /// </list>
         /// </returns>
-        /// <remarks>This feature requires a license</remarks>
-        public static Result<CalibrationData> TickEyeTrackingCalibration(float deltaTime, bool isVisible)
+        public static Result<Stereo<Matrix4x4>> GetProjectionMatrices(float near, float far)
         {
-            Fove.CalibrationData foveData;
-            var error = Headset.TickEyeTrackingCalibration(deltaTime, isVisible, out foveData);
-            return new Result<CalibrationData>((CalibrationData)foveData, error);
+            var result = Headset.GetProjectionMatricesRH(near, far);
+            var matrices = new Stereo<Matrix4x4>(result.value.left.ToMatrix4x4(), result.value.right.ToMatrix4x4());
+            return new Result<Stereo<Matrix4x4>>(matrices, result.error);
+        }
+
+        /// <summary>
+        /// Get the offsets to the origin of the headset local space of the left and right eyes.
+        /// </summary>
+        /// <returns>
+        /// The position of left and right eye in the headset local coordinate space, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// </list>
+        /// </returns>
+        public static Result<Stereo<Vector3>> GetEyeOffsets()
+        {
+            var result = Headset.GetEyeToHeadMatrices();
+            var offsets = new Stereo<Vector3>(
+                Instance.GetEyeOffsetVector(result.value.left),
+                Instance.GetEyeOffsetVector(result.value.right));
+            return new Result<Stereo<Vector3>>(offsets, result.error);
+        }
+
+        /// <summary>
+        /// Interocular distance to use for rendering in meters
+        /// <para>
+        /// This is an estimation of the distance between centers of the left and right eyeballs.
+        /// Half of the IOD can be used to displace the left and right cameras for stereoscopic rendering.
+        /// We recommend calling this each frame when doing stereoscopic rendering.
+        /// Future versions of the FOVE service may update the IOD during runtime as needed.
+        /// </para>
+        /// </summary>
+        /// <returns>
+        /// A floating point value describing the IOD, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// </list>
+        /// </returns>
+        public static Result<float> GetRenderIOD()
+        {
+            return Headset.GetRenderIOD();
         }
 
         /// <summary>
@@ -501,11 +1004,11 @@ namespace Fove.Unity
         /// <returns>The result of the operation</returns>
         public static Result ConnectCompositor()
         {
-            foreach (var eyeTextures in m_sEyeTextures.Values)
+            foreach (var eyeTextures in Instance.eyeTextures.Values)
                 eyeTextures.areNew = true; // force to reset eye texture
 
             UnityFuncs.ResetNativeState();
-            RegisterCapabilities(m_sCurrentCapabilities);
+            RegisterCapabilities(Instance.currentCapabilities);
             return new Result(ErrorCode.None);
         }
 
@@ -526,156 +1029,18 @@ namespace Fove.Unity
         }
 
         /// <summary>
-        /// Query whether or not a headset is physically connected to the computer
+        /// Re-fetch and update all the data from the Headset.
+        /// <para>
+        /// This function is automatically called at the beginning of each frame, so in most case you won't need it. 
+        /// It can be usefull when the frame processing time is high and you want to be sure to work with the 
+        /// latest data at some specific time point.
+        /// </para>
         /// </summary>
-        /// <returns>Whether or not a headset is present on the machine.</returns>
-        public static Result<bool> IsHardwareConnected(bool immediate = false)
+        /// <returns>True in case of success, false otherwise</returns>
+        public static bool UpdateHeadsetData()
         {
-            if (!immediate)
-                return m_sIsHardwareConnected;
-
-            Result<bool> result;
-            result.error = Headset.IsHardwareConnected(out result.value);
-            if (result.HasError)
-                result.value = m_sIsHardwareConnected;
-
-            return result;
+            return Instance.UpdateHmdDataInternal();
         }
-
-        /// <summary>
-        /// Query whether the headset has all requested features booted up and running (position tracking, eye tracking,
-        /// orientation, etc...).
-        /// </summary>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        /// <returns>Whether you can expect valid data from all headset functions.</returns>
-        public static Result<bool> IsHardwareReady(bool immediate = false)
-        {
-            if (!immediate)
-                return m_sIsHardwareReady;
-
-            Result<bool> result;
-            result.error = Headset.IsHardwareReady(out result.value);
-            if (result.HasError)
-                result.value = m_sIsHardwareReady;
-
-            return result;
-        }
-
-        /// <summary>
-        /// Query whether eye tracking is calibrated and usable or not.
-        /// </summary>
-        /// <remarks>If you are using profiles to save calibration results, the eye tracking system is already calibrated at the launch of the application/service</remarks>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        /// <returns>Whether eye tracking has been calibrated.</returns>
-        public static Result<bool> IsEyeTrackingCalibrated(bool immediate = false)
-        {
-            if (!immediate)
-                return m_sIsCalibrated;
-
-            Result<bool> result;
-            result.error = Headset.IsEyeTrackingCalibrated(out result.value);
-            if (result.HasError)
-                result.value = m_sIsCalibrated;
-
-            return result;
-        }
-
-        /// <summary>
-        /// Query whether eye tracking is currently calibrating, meaning that the user likely
-        /// cannot see your game due to the calibration process. While this is true, you should
-        /// refrain from showing any interactions that would respond to eye gaze.
-        /// </summary>
-        /// <remarks>
-        /// You should carefully check the value returned by this function as the calibration process
-        /// can be manually started by the user at any time during your game. 
-        /// Other than user manual triggering, times when calibration will occur are:
-        /// <list type="number">
-        /// <item>At the launch of you application, if you check 'Force Calibration' in the fove settings.</item>
-        /// <item>Whenever you call <see cref="EnsureEyeTrackingCalibration(CalibrationMethod)"/> 
-        /// or <see cref="StartEyeTrackingCalibration(bool, CalibrationMethod)"/>.</item>
-        /// </list>
-        /// </remarks>
-        /// <param name="immediate">If true re-query the value to the headset, otherwise it returns the value cached at the beginning of the frame.</param>
-        /// <returns>Whether eye tracking is calibrating.</returns>
-        public static Result<bool> IsEyeTrackingCalibrating(bool immediate = false)
-        {
-            if (!immediate)
-                return m_sIsCalibrating;
-
-            Result<bool> result;
-            result.error = Headset.IsEyeTrackingCalibrating(out result.value);
-            if (result.HasError)
-                result.value = m_sIsCalibrating;
-
-            return result;
-        }
-
-        /// <summary>
-        /// Get the version of the Fove client library. This returns "[major].[minor].[build]".
-        /// </summary>
-        /// <returns>A string representing the client library version</returns>
-        public static Result<string> GetClientVersion()
-        {
-            Versions versions;
-            var error = Headset.GetSoftwareVersions(out versions);
-
-            var versionString = error == ErrorCode.None 
-                ? "" + versions.clientMajor + "." + versions.clientMinor + "." + versions.clientBuild
-                : "Unknown";
-
-            return new Result<string>(versionString, error);
-        }
-
-        /// <summary>
-        /// Get the version of the installed runtime service. This returns "[major].[minor].[build]".
-        /// </summary>
-        /// <returns>A string representing the runtime library version</returns>
-        public static Result<string> GetRuntimeVersion()
-        {
-            Versions versions;
-            var error = Headset.GetSoftwareVersions(out versions);
-
-            var versionString = error == ErrorCode.None
-                ? "" + versions.runtimeMajor + "." + versions.runtimeMinor + "." + versions.runtimeBuild
-                : "Unknown";
-
-            return new Result<string>(versionString, error);
-        }
-
-        /// <summary>
-        /// Check whether the runtime and client versions are compatible and are expected to work correctly.
-        /// </summary>
-        /// <returns>Any errors that occurred when checking the runtime and client versions, or None if 
-        /// everything seems fine.</returns>
-        /// <remarks>Newer runtime versions are designed to be compatible with older client versions, however new
-        /// client versions are not designed to be compatible with old runtime versions.</remarks>
-        public static Result<ErrorCode> CheckSoftwareVersions()
-        {
-            return new Result<ErrorCode>(Headset.CheckSoftwareVersions());
-        }
-
-        /// <summary>
-        /// Register a headset capability independently from the <see cref="FoveInterface"/> needs.
-        /// </summary>
-        /// <param name="capabilities">The capabilities to add</param>
-        public static void RegisterCapabilities(ClientCapabilities capabilities)
-        {
-            m_sEnforcedCapabilities |= capabilities;
-            UpdateCapabilities();
-        }
-
-        /// <summary>
-        /// Unregister a capability previously registered with <see cref="RegisterCapabilities(ClientCapabilities)"/>.
-        /// </summary>
-        /// <remarks>The capability will be effectively unregistered only if not needed by the <see cref="FoveInterface"/> game instances</remarks>
-        /// <param name="capabilities">The capabilities to remove </param>
-        public static void UnregisterCapabilities(ClientCapabilities capabilities)
-        {
-            m_sEnforcedCapabilities &= ~capabilities;
-            UpdateCapabilities();
-        }
-
-
 
         /// <summary>
         /// Creates a new profile
@@ -705,7 +1070,7 @@ namespace Fove.Unity
         /// <seealso cref="GetProfileDataPath(string)"/>
         public static Result CreateProfile(string newName)
         {
-            return new Result(Headset.CreateProfile(newName));
+            return Headset.CreateProfile(newName);
         }
 
         /// <summary>
@@ -731,7 +1096,7 @@ namespace Fove.Unity
         /// <seealso cref="GetProfileDataPath(string)"/>
         public static Result RenameProfile(string oldName, string newName)
         {
-            return new Result(Headset.RenameProfile(oldName, newName));
+            return Headset.RenameProfile(oldName, newName);
         }
 
 
@@ -759,14 +1124,14 @@ namespace Fove.Unity
         /// <seealso cref="GetProfileDataPath(string)"/>
         public static Result DeleteProfile(string profileName)
         {
-            return new Result(Headset.DeleteProfile(profileName));
+            return Headset.DeleteProfile(profileName);
         }
 
         /// <summary>
         /// Lists all existing profiles
         /// </summary>
         /// <returns>
-        /// The existing profile name list or one of the following errors:
+        /// The list of existing profile names, and the call success status:
         /// <list type="bullet">
         /// <item><see cref="ErrorCode.None"/>if the profile list was successfully filled</item>
         /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
@@ -780,9 +1145,7 @@ namespace Fove.Unity
         /// <seealso cref="GetProfileDataPath(string)"/>
         public static Result<List<string>> ListProfiles()
         {
-            var result = new Result<List<string>>();
-            result.error = Headset.ListProfiles(out result.value);
-            return result;
+            return Headset.ListProfiles();
         }
 
         /// <summary>
@@ -813,14 +1176,14 @@ namespace Fove.Unity
         /// <seealso cref="GetProfileDataPath(string)"/>
         public static Result SetCurrentProfile(string profileName)
         {
-            return new Result(Headset.SetCurrentProfile(profileName));
+            return Headset.SetCurrentProfile(profileName);
         }
 
         /// <summary>
         /// Gets the current profile
         /// </summary>
         /// <returns>
-        /// The name of current profile or one of the following errors:
+        /// The name of the profile currently used, and the call success status:
         /// <list type="bullet">
         /// <item><see cref="ErrorCode.None"/> if the profile name was successfully get</item>
         /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
@@ -834,9 +1197,7 @@ namespace Fove.Unity
         /// <seealso cref="GetProfileDataPath(string)"/>
         public static Result<string> GetCurrentProfile()
         {
-            var result = new Result<string>();
-            result.error = Headset.GetCurrentProfile(out result.value);
-            return result;
+            return Headset.GetCurrentProfile();
         }
 
         /// <summary>
@@ -852,7 +1213,7 @@ namespace Fove.Unity
         /// </remarks>
         /// <param name="profileName">The name of the profile to be queried, or an empty string if no profile is set</param>
         /// <returns>
-        /// The data path associated to the provided profile or one of the following errors:
+        /// The data path associated to the provided profile, and the call success status:
         /// <list type="bullet">
         /// <item><see cref="ErrorCode.None"/>if the data path was successfully created and returned</item>
         /// <item><see cref="ErrorCode.Profile_DoesntExist"/> if there is no such profile</item>
@@ -869,9 +1230,22 @@ namespace Fove.Unity
         /// <seealso cref="GetCurrentProfile()"/>
         public static Result<string> GetProfileDataPath(string profileName)
         {
-            var result = new Result<string>();
-            result.error = Headset.GetProfileDataPath(profileName, out result.value);
-            return result;
+            return Headset.GetProfileDataPath(profileName);
+        }
+
+        /// <summary>
+        /// Returns the mirror client texture
+        /// </summary>
+        /// <returns>
+        /// The mirror client texture, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if no valid data has been returned by the service yet</item>
+        /// </list>
+        /// </returns>
+        public static Result<Texture2D> GetMirrorTexture()
+        {
+            return Instance.GetMirrorTextureInternal();
         }
     }
 }

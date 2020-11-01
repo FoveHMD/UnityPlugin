@@ -14,16 +14,14 @@ public class UpdateCapabilitiesInfo : MonoBehaviour {
     public FoveInterface fove;
 
     // Update is called once per frame
-    void Update () {
-        var pose = FoveManager.GetHMDPose().value;
-        var conv = FoveManager.GetHMDGazeConvergence().value;
-        var foveConv = fove.GetGazeConvergence().value;
-        ManagerOrientText.text = toFomattedString(pose.orientation.ToQuaternion());
-        ManagerPosText.text = toFomattedString(pose.position.ToVector3());
-        ManagerGazeText.text = toFomattedString(conv.ray.direction);
+    void Update () 
+    {
+        ManagerOrientText.text = toFomattedString(FoveManager.GetHmdRotation().value);
+        ManagerPosText.text = toFomattedString(FoveManager.GetHmdPosition(false).value);
+        ManagerGazeText.text = toFomattedString(FoveManager.GetHmdCombinedGazeRay().value.direction);
         InterfaceOrientText.text = toFomattedString(fove.transform.rotation);
         InterfacePosText.text = toFomattedString(fove.transform.position);
-        InterfaceGazeText.text = toFomattedString(foveConv.ray.direction);
+        InterfaceGazeText.text = toFomattedString(fove.GetCombinedGazeRay().value.direction);
     }
 
     private string toFomattedString(Vector3 v)

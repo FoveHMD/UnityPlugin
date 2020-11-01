@@ -15,7 +15,7 @@ public class ApplyGazeForce : MonoBehaviour
 		if (rbody == null)
 			return;
 
-		var gaze = fove.GetGazeConvergence().value;
-		rbody.AddForce(25 * gaze.ray.direction);
+		var gazeRay = fove.GetCombinedGazeRay().value;
+		rbody.AddForce(25 * gazeRay.direction);
 	}
 }

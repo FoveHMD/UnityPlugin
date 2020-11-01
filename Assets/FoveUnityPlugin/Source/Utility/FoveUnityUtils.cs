@@ -152,14 +152,11 @@ namespace Fove.Unity
             return new BoundingBox { center = ToVec3(bounds.center), extend = ToVec3(bounds.extents) };
         }
 
-        internal static void CalculateGazeRays(ref Matrix4x4 transform, ref Stereo<Vector3> eyeOffsets, ref Stereo<Vector3> eyeVectors, out Stereo<Ray> gazeRays)
+        internal static Result<Ray> CalculateWorldGazeVector(ref Matrix4x4 transform, ref Vector3 eyeOffset, ref Result<Vector3> eyeVector)
         {
-            var lPosition = transform.MultiplyPoint(eyeOffsets.left);
-            var rPosition = transform.MultiplyPoint(eyeOffsets.right);
-            var lDirection = transform.MultiplyVector(eyeVectors.left).normalized;
-            var rDirection = transform.MultiplyVector(eyeVectors.right).normalized;
-            gazeRays.left = new Ray(lPosition, lDirection);
-            gazeRays.right = new Ray(rPosition, rDirection);
+            var position = transform.MultiplyPoint(eyeOffset);
+            var direction = transform.MultiplyVector(eyeVector.value).normalized;
+            return new Result<Ray>(new Ray(position, direction), eyeVector.error);
         }
 
         #endregion

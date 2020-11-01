@@ -9,8 +9,10 @@ public class GazeHighlight : MonoBehaviour {
     private Material mat;
 
     // Use this for initialization
-    void Start () 
+    void Start ()
     {
+        FoveManager.RegisterCapabilities(Fove.ClientCapabilities.GazedObjectDetection);
+
         if (gazedReference == null)
             gazedReference = gameObject;
 
