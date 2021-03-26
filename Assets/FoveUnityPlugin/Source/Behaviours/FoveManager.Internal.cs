@@ -49,6 +49,7 @@ namespace Fove.Unity
         // Rendering/submission native pointers
         private IntPtr submitNativeFunc;
         private IntPtr wfrpNativeFunc;
+        private IntPtr updateMirrorTexNativeFunc;
 
         // Capabilities
         private ClientCapabilities currentCapabilities = ClientCapabilities.None;
@@ -60,6 +61,14 @@ namespace Fove.Unity
         private Result<Texture2D> eyesTexture = new Result<Texture2D>(null, ErrorCode.Data_NoUpdate);
         private Result<Texture2D> positionTexture = new Result<Texture2D>(null, ErrorCode.Data_NoUpdate);
         private Result<Texture2D> mirrorTexture = new Result<Texture2D>(null, ErrorCode.Data_NoUpdate);
+
+        private IntPtr mirrorTexPtr;
+        private int mirrorTexWidth;
+        private int mirrorTexHeight;
+
+        // Explicit backend initialization for mirror-only apps
+        private bool isBackendInitialized = false;
+        private bool isMirrorRequested = false;
 
         private class EyeTextures
         {
@@ -196,15 +205,16 @@ namespace Fove.Unity
 
             headset = new Headset(currentCapabilities);
 
-            worldScale = FoveSettings.WorldScale;
-            renderScale = FoveSettings.RenderScale;
-
             submitNativeFunc = UnityFuncs.GetSubmitFunctionPtr();
             wfrpNativeFunc = UnityFuncs.GetWfrpFunctionPtr();
+            updateMirrorTexNativeFunc = UnityFuncs.GetUpdateMirrorTexPtrFunctionPtr();
         }
 
         void Awake()
         {
+            worldScale = FoveSettings.WorldScale;
+            renderScale = FoveSettings.RenderScale;
+
             headset.GazeCastPolicy = FoveSettings.GazeCastPolicy;
 
             UnityFuncs.ResetNativeState();
@@ -380,7 +390,10 @@ namespace Fove.Unity
 
                 // Don't do any rendering code (below) if the compositor isn't ready
                 if (!CompositorReadyCheck())
+                {
+                    yield return endOfFrameWait;
                     continue;
+                }
 
                 // On first run and in case any new FoveInterfaces have been created
                 if (m_sUnregisteredInterfaces.Count > 0)
@@ -438,6 +451,8 @@ namespace Fove.Unity
                     GL.Flush();
                     GL.IssuePluginEvent(submitNativeFunc, layerId);
 
+                    isBackendInitialized = true; // Submit implicitly initializes the backend
+
                     if (!FoveSettings.CustomDesktopView)
                     {
                         // this code works only because we only have one single layer (base) allowed for the moment
@@ -450,7 +465,14 @@ namespace Fove.Unity
                 }
                 GL.Flush();
 
+                if (!isBackendInitialized && isMirrorRequested)
+                {
+                    InitBackendExplicit();
+                    isBackendInitialized = true;
+                }
+
                 // Wait for render pose
+                GL.IssuePluginEvent(updateMirrorTexNativeFunc, 0);
                 GL.IssuePluginEvent(wfrpNativeFunc, 0);
 
                 yield return endOfFrameWait;
@@ -683,18 +705,42 @@ namespace Fove.Unity
             }
         }
 
+        private void InitBackendExplicit()
+        {
+            try
+            {
+                Debug.Log("Explicitly initializing backend");
+                Texture2D tempTexture = new Texture2D(1, 1, TextureFormat.RGB24, false);
+                ErrorCode error = InitBackend(tempTexture.GetNativeTexturePtr());
+                if (error != ErrorCode.None)
+                    Debug.Log("Failed to initialize backend: " + error);
+                Texture2D.Destroy(tempTexture);
+            }
+            catch (Exception e)
+            {
+                Debug.Log("Error trying to initialize backend: " + e);
+            }
+        }
+
         public Result<Texture2D> GetMirrorTextureInternal()
         {
-            if (mirrorTexture.value == null)
+            isMirrorRequested = true;
+
+            IntPtr texPtr;
+            int texWidth, texHeight;
+            GetMirrorTexturePtr(out texPtr, out texWidth, out texHeight);
+            if (texPtr != IntPtr.Zero // the mirror texture doesn't exist yet
+                && (mirrorTexture.value == null || texPtr != mirrorTexPtr || texWidth != mirrorTexWidth || texHeight != mirrorTexHeight)) 
             {
-                IntPtr texPtr;
-                int texWidth, texHeight;
-                GetMirrorTexturePtr(out texPtr, out texWidth, out texHeight);
-                if (texPtr != IntPtr.Zero) // the mirror texture doesn't exist yet
-                {
-                    mirrorTexture.value = Texture2D.CreateExternalTexture(texWidth, texHeight, TextureFormat.RGBA32, false, false, texPtr);
-                    mirrorTexture.error = ErrorCode.None;
-                }
+                mirrorTexPtr = texPtr;
+                mirrorTexWidth = texWidth;
+                mirrorTexHeight = texHeight;
+
+                if (mirrorTexture.value)
+                    Destroy(mirrorTexture.value);
+
+                mirrorTexture.value = Texture2D.CreateExternalTexture(texWidth, texHeight, TextureFormat.RGBA32, false, false, texPtr);
+                mirrorTexture.error = ErrorCode.None;
             }
 
             return mirrorTexture;
@@ -708,6 +754,8 @@ namespace Fove.Unity
             public static extern IntPtr GetSubmitFunctionPtr();
             [DllImport("FoveUnityFuncs", EntryPoint = "getWfrpFunctionPtr")]
             public static extern IntPtr GetWfrpFunctionPtr();
+            [DllImport("FoveUnityFuncs", EntryPoint = "getUpdateMirrorTexPtrFunctionPtr")]
+            public static extern IntPtr GetUpdateMirrorTexPtrFunctionPtr();
 
             [DllImport("FoveUnityFuncs")]
             public static extern void SetLogSinkFunction(IntPtr fp);
@@ -744,6 +792,8 @@ namespace Fove.Unity
 
         [DllImport("FoveUnityFuncs", EntryPoint = "getMirrorTexturePtr")]
         private static extern void GetMirrorTexturePtr(out IntPtr texPtr, out int texWidth, out int texHeight);
+        [DllImport("FoveUnityFuncs", EntryPoint = "initBackend")]
+        private static extern ErrorCode InitBackend(IntPtr tempTexPtr);
 
         #endregion
     }

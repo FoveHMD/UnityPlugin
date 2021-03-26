@@ -38,55 +38,55 @@ namespace Fove.Unity
         /// When true, fetch the gaze information from the fove HMD and convert it to world space
         /// </summary>
         [Tooltip("Turns off gaze tracking")]
-        [SerializeField] public bool fetchGaze = true;
+        public bool fetchGaze = true;
 
         /// <summary>
         /// When true, fetch the HMD orientation and push it to the game object transform
         /// </summary>
         [Tooltip("Turns off orientation tracking")]
-        [SerializeField] public bool fetchOrientation = true;
+        public bool fetchOrientation = true;
 
         /// <summary>
         /// When true, fetch the HMD position and push it to the game object transform
         /// </summary>
         [Tooltip("Turns off position tracking (turns on position tracking when on)")]
-        [SerializeField] public bool fetchPosition = true;
+        public bool fetchPosition = true;
 
         /// <summary>
         /// Specify which eye this interface should render to.
         /// </summary>
         [Tooltip("Which eye(s) to render to.\n\nSelecting 'Left' or 'Right' will cause this camera to ONLY render to that eye. 'Both' is default. 'Neither' will prevent this camera from rendering to the HMD.\n\nNOTE: 'Neither' will not prevent the normal camera view from displaying.")]
-        [SerializeField] public EyeTarget eyeTargets = EyeTarget.Both;
+        public EyeTarget eyeTargets = EyeTarget.Both;
 
         /// <summary>
         /// Specify the current user pose (Standing or Siting)
         /// </summary>
         [Tooltip("How to interpret the HMD position:\n\nSitting: (Old default) The HMD is positioned relative to the tracking camera.\n\nStanding: An (system-configurable) offset is added to the 'Sitting' position. This option is more compatible with systems like SteamVR.")]
-        [SerializeField] public PlayerPose poseType = PlayerPose.Standing;
+        public PlayerPose poseType = PlayerPose.Standing;
         
         /// <summary>
         /// Unity layers to cull when rendering the left eye.
         /// </summary>
         [Tooltip("Don't draw any of the selected layers to the left eye.")]
-        [SerializeField] public LayerMask cullMaskLeft;
+        public LayerMask cullMaskLeft;
 
         /// <summary>
         /// Unity layers to cull when rendering the right eye.
         /// </summary>
         [Tooltip("Don't draw any of the selected layers to the right eye.")]
-        [SerializeField] public LayerMask cullMaskRight;
+        public LayerMask cullMaskRight;
 
         /// <summary>
         /// Unity layers to ignore when performing gaze object detection.
         /// </summary>
         [Tooltip("Don't perform gaze object detection for the selected layers.")]
-        [SerializeField] public LayerMask gazeCastCullMask;
+        public LayerMask gazeCastCullMask;
 
         /// <summary>
         /// If true, automatically register (resp. unregister) camera object when this object get enabled (resp. disabled)
         /// </summary>
         [Tooltip("Automatically register the camera object associated to the FoveInterface")]
-        [SerializeField] public bool registerCameraObject = true;
+        public bool registerCameraObject = true;
 
         /// <summary>
         /// If true, disable the compositor timewarp feature for the layer

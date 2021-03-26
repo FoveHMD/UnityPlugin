@@ -8,12 +8,12 @@
         /// <summary>
         /// Major number
         /// </summary>
-        public const int MAJOR = 3;
+        public const int MAJOR = 4;
 
         /// <summary>
         /// Minor number
         /// </summary>
-        public const int MINOR = 2;
+        public const int MINOR = 1;
 
         /// <summary>
         /// Path number

@@ -1,5 +1,15 @@
 # FOVE Unity Plugin Changelog
 
+## 4.1.0
+* Update FOVE SDK from v1.0.0 to v1.0.2
+* Major update to GazeRecorder script
+* Fix lockup when FOVE Compositor is not running
+* Various bug fixes regarding the mirror texture
+* Remove unnecessary [SerializeField] attribute generating warnings in new version of Unity.
+* Fix GetGazeScreenPosition
+* Add pupil shape API
+* Set world and render scales in the awake function rather than in the constructor as Resource.Load can't be called from constructors
+
 ## 4.0.0
 * `FoveManager`:
   * Add the `HasHmdAdjustmentGuiTimeout` API

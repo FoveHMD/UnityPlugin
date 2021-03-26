@@ -367,6 +367,11 @@
             Give you direct access to the HMD screen and disable the Fove compositor
             </summary>
         </member>
+        <member name="F:Fove.ClientCapabilities.PupilShape">
+            <summary>
+            Enables the detection of the pupil shape
+            </summary>
+        </member>
         <member name="T:Fove.ErrorCode">
             <summary>
             The error codes that the Fove system may return
@@ -1745,7 +1750,7 @@
         </member>
         <member name="T:Fove.EyeShape">
             <summary>
-            Specify the shape of an eye (research API)
+            Specify the shape of an eye
             </summary>
         </member>
         <member name="F:Fove.EyeShape.OutlinePointCount">
@@ -1822,6 +1827,27 @@
             <item>Point 6: the outside extremity of the outline (the point the furthest from the nose)</item>
             <item>Point 7 to 11: top eyelid points going from the outside to the inside of the eye</item>
             </list>
+            </summary>
+        </member>
+        <member name="T:Fove.PupilShape">
+            <summary>
+            Specity the shape of a pupil as an ellipse
+            Coordinates are in eye-image pixels from (0,0) to (camerawidth, cameraheight), with (0,0) being the top left.
+            </summary>
+        </member>
+        <member name="F:Fove.PupilShape.center">
+            <summary>
+            The center of the ellipse
+            </summary>
+        </member>
+        <member name="F:Fove.PupilShape.size">
+            <summary>
+            The width and height of the ellipse
+            </summary>
+        </member>
+        <member name="F:Fove.PupilShape.angle">
+            <summary>
+            A clockwise rotation around the center, in degrees
             </summary>
         </member>
         <member name="T:Fove.BitmapImage">
@@ -2679,6 +2705,24 @@
             <param name="eye">Specify which eye to get the value for</param>
             <returns>
             The shape of the specified eye, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+            <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.GetPupilShape(Fove.Eye)">
+            <summary>
+            Returns the shape of the pupil of the specified user eye in the Eyes camera image.
+            </summary>
+            <remarks><see cref="F:Fove.ClientCapabilities.PupilShape"/> should be registered to use this function.</remarks>
+            <param name="eye">Specify which eye to get the value for</param>
+            <returns>
+            The shape of the pupil of the specified eye, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>

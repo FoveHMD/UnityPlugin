@@ -280,10 +280,10 @@ namespace Fove.Unity
         /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
         /// </list>
         /// </returns>
-        public static Result<Vector3> GetGazeScreenPosition(Eye eye)
+        public static Result<Vector2> GetGazeScreenPosition(Eye eye)
         {
-            var result = Headset.GetGazeVector(eye);
-            return new Result<Vector3>(result.value.ToVector3(), result.error);
+            var result = Headset.GetGazeScreenPosition(eye);
+            return new Result<Vector2>(result.value.ToVector2(), result.error);
         }
 
         /// <summary>
@@ -689,6 +689,28 @@ namespace Fove.Unity
         {
             var result = Headset.GetEyeShape(eye);
             return new Result<EyeShape>((EyeShape)result.value, result.error);
+        }
+
+        /// <summary>
+        /// Returns the shape of the pupil of the specified user eye in the Eyes camera image.
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.PupilShape"/> should be registered to use this function.</remarks>
+        /// <param name="eye">Specify which eye to get the value for</param>
+        /// <returns>
+        /// The shape of the pupil of the specified eye, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<PupilShape> GetPupilShape(Eye eye)
+        {
+            var result = Headset.GetPupilShape(eye);
+            return new Result<PupilShape>((PupilShape)result.value, result.error);
         }
 
         /// <summary>
