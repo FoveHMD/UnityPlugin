@@ -2,6 +2,10 @@
 
 This document explains how to smoothly upgrade the plugin from a previous version in a Unity project.
 
+## Upgrading to 4.2.0
+
+A public function has been renamed so you may have to adjust your code (see the [changelog](./Changelog.md) for more details).
+
 ## Upgrading to 3.2.0
 
 All Fove APIs return types changed from `Type` to `Result<Type>`. The new result type contains both the previously returned value plus an error code. 

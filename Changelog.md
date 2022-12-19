@@ -1,5 +1,16 @@
 # FOVE Unity Plugin Changelog
 
+## 4.3.0
+* Update FOVE SDK from v1.1.0 to v1.2.0
+* Add the QueryLicenseInfo API to the `FoveManager`
+
+## 4.2.0
+* Rename `FoveInterface.GetEyeVector` into `FoveInterface.GetEyeRay`
+* Fix `FoveManager.GetCombinedGazeDepth` calculation. It was using render scale instead of world scale.
+* Fix rendering issue when disabling `fetch and sync: Orientation` from the `FoveInterface`.
+* Update FOVE SDK from v1.0.2 to v1.1.0
+* Fix plugin guide documentation
+
 ## 4.1.0
 * Update FOVE SDK from v1.0.0 to v1.0.2
 * Major update to GazeRecorder script

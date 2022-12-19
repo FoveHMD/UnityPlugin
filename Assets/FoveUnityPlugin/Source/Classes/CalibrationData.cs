@@ -43,6 +43,11 @@ namespace Fove.Unity
         public CalibrationState state;
 
         /// <summary>
+        /// Human readable extra information about the current calibration state
+        /// </summary>
+        public string stateInfo;
+
+        /// <summary>
         /// The current calibration target to display for the left and right eyes
         /// </summary>
         public Stereo<CalibrationTarget> targets;
@@ -54,7 +59,12 @@ namespace Fove.Unity
         {
             var targetL = (CalibrationTarget)data.targetL;
             var targetR = (CalibrationTarget)data.targetR;
-            return new CalibrationData { method = data.method, state= data.state, targets = new Stereo<CalibrationTarget>(targetL, targetR)};
+
+            return new CalibrationData { 
+                method = data.method, 
+                state= data.state, 
+                stateInfo = data.stateInfo, 
+                targets = new Stereo<CalibrationTarget>(targetL, targetR)};
         }
     }
 }

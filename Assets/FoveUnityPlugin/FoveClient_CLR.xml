@@ -45,7 +45,7 @@
             Dispose native resources and destroy the compositor wrapper
             </summary>
         </member>
-        <member name="M:Fove.Compositor.CreateLayer(Fove.CompositorLayerCreateInfo,Fove.CompositorLayer@)">
+        <member name="M:Fove.Compositor.CreateLayer(Fove.CompositorLayerCreateInfo)">
             <summary>
             Creates a new layer within the compositor
             <para>
@@ -63,8 +63,7 @@
             </para>
             </summary>
             <param name="layerInfo">The settings for the layer to be created</param>
-            <param name="layer">A struct where the defaults of the newly created layer will be written</param>
-            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+            <returns>The defaults of the newly created layer, and the call success status</returns>
             <seealso cref="M:Fove.Compositor.Submit(Fove.CompositorLayerSubmitInfo@)"/>
         </member>
         <member name="M:Fove.Compositor.Submit(Fove.CompositorLayerSubmitInfo@)">
@@ -73,19 +72,29 @@
             <para>This function takes the feed from your game engine to the compositor for output.</para>
             </summary>
             <param name="layer">Layer information for the layer to submit</param>
-            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
-            <seealso cref="M:Fove.Compositor.CreateLayer(Fove.CompositorLayerCreateInfo,Fove.CompositorLayer@)"/>
+            <returns>The call success status</returns>
+            <seealso cref="M:Fove.Compositor.CreateLayer(Fove.CompositorLayerCreateInfo)"/>
         </member>
-        <member name="M:Fove.Compositor.WaitForRenderPose(Fove.Pose@)">
+        <member name="M:Fove.Compositor.WaitForRenderPose">
             <summary>
-            Wait for the most recent pose for rendering purposes.
+            Wait for the next pose to use for rendering purposes
             <para>
             All compositor clients should use this function as the sole means of limiting their frame rate.
-            This allows the client to render at the correct frame rate for the HMD display.
-            Upon this function returning, the client should proceed directly to rendering, 
-            to reduce the chance of missing the frame. If outPose is not null, 
-            this function will return the latest pose as a convenience to the caller.
+            This allows the client to render at the correct frame rate for the HMD display and with the most adequate HMD pose.
+            Upon this function returning, the client should proceed directly to rendering, to reduce the chance of missing the frame.
             </para>
+            <para>
+            If outPose is not null, this function returns the pose that should be use to render the current frame.
+            This pose can also be get later using the <see cref="M:Fove.Compositor.GetLastRenderPose"/> function.
+            </para>
+            <code>
+            In general, a client's main loop should look like:
+            {
+            	Update();                                // Run AI, physics, etc, for the next frame
+            	compositor.WaitForRenderPose(&amp;pose); // Wait for the next frame, and get the pose
+            	Draw(pose);                              // Render the scene using the new pose
+            }
+            </code>
             </summary>
             <example>
             In general, a client's main loop should look like:
@@ -95,30 +104,27 @@
             Draw(pose);                              // Render the scene using the new pose
             </code>
             </example>
-            <param name="pose">The latest pose of the headset.</param>
-            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+            <returns>The HMD pose to use to render the frame, and the call success status</returns>
         </member>
-        <member name="M:Fove.Compositor.GetLastRenderPose(Fove.Pose@)">
+        <member name="M:Fove.Compositor.GetLastRenderPose">
             <summary>
             Get the last cached pose for rendering purposes
             </summary>
-            <param name="pose">The last cached pose</param>
-            <returns><see cref="F:Fove.ErrorCode.None"/> on success. The corresponding error code otherwise</returns>
+            <returns>The last render pose, and the call success status</returns>
         </member>
         <member name="M:Fove.Compositor.IsReady">
             <summary>
-            Get the ready state of the compositor
+            Returns true if we are connected to a running compositor and ready to submit frames for compositing
             </summary>
-            <returns>True if we are connected to a running compositor and ready to submit frames for compositing</returns>
+            <returns>The compositor ready state, and the call success status</returns>
         </member>
-        <member name="M:Fove.Compositor.GetAdapterId(Fove.AdapterId@)">
+        <member name="M:Fove.Compositor.QueryAdapterId">
             <summary>
             Returns the ID of the GPU currently attached to the headset
-            <para>For systems with multiple GPUs, submitted textures to the compositor must 
+            <para>For systems with multiple GPUs, submitted textures to the compositor must
             from the same GPU that the compositor is using</para>
             </summary>
-            <param name="adapterId">The ID of the adapter</param>
-            <returns>True if we are connected to a running compositor and ready to submit frames for compositing</returns>
+            <returns>The ID of the GPU currently attached to the headset, and the call success status</returns>
         </member>
         <member name="M:Fove.Compositor.Dispose">
             <summary>
@@ -141,7 +147,7 @@
             <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully retrieved</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
             <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the queried key doesn't exist</item>
-            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not a boolean</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exists but its value type is not a boolean</item>
             </list>
             </returns>
         </member>
@@ -156,7 +162,7 @@
             <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully retrieved</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
             <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the queried key doesn't exist</item>
-            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not an int</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exists but its value type is not an int</item>
             </list>
             </returns>
         </member>
@@ -171,7 +177,7 @@
             <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully retrieved</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
             <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the queried key doesn't exist</item>
-            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not a float</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exists but its value type is not a float</item>
             </list>
             </returns>
         </member>
@@ -186,7 +192,7 @@
             <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully retrieved</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
             <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the queried key doesn't exist</item>
-            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not a string</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exists but its value type is not a string</item>
             </list>
             </returns>
         </member>
@@ -201,7 +207,9 @@
             <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully set</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
             <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the provided key doesn't exist</item>
-            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not a boolean</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exists but its value type is not a boolean</item>
+            <item><see cref="F:Fove.ErrorCode.System_AccessDenied"/>, if the config file is not writable</item>
+            <item><see cref="F:Fove.ErrorCode.System_UnknownError"/>, if any other system error happened with the config file</item>
             </list>
             </returns>
         </member>
@@ -216,7 +224,9 @@
             <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully set</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
             <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the provided key doesn't exist</item>
-            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not an int</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exists but its value type is not an int</item>
+            <item><see cref="F:Fove.ErrorCode.System_AccessDenied"/>, if the config file is not writable</item>
+            <item><see cref="F:Fove.ErrorCode.System_UnknownError"/>, if any other system error happened with the config file</item>
             </list>
             </returns>
         </member>
@@ -231,7 +241,9 @@
             <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully set</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
             <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the provided key doesn't exist</item>
-            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not a float</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exists but its value type is not a float</item>
+            <item><see cref="F:Fove.ErrorCode.System_AccessDenied"/>, if the config file is not writable</item>
+            <item><see cref="F:Fove.ErrorCode.System_UnknownError"/>, if any other system error happened with the config file</item>
             </list>
             </returns>
         </member>
@@ -246,7 +258,9 @@
             <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully set</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
             <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the provided key doesn't exist</item>
-            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exist but its value type is not a string</item>
+            <item><see cref="F:Fove.ErrorCode.Config_TypeMismatch"/>, if the key exists but its value type is not a string</item>
+            <item><see cref="F:Fove.ErrorCode.System_AccessDenied"/>, if the config file is not writable</item>
+            <item><see cref="F:Fove.ErrorCode.System_UnknownError"/>, if any other system error happened with the config file</item>
             </list>
             </returns>
         </member>
@@ -260,6 +274,8 @@
             <item><see cref="F:Fove.ErrorCode.None"/>, if the value was successfully reset</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/>, if key is null</item>
             <item><see cref="F:Fove.ErrorCode.Config_DoesntExist"/>, if the provided key doesn't exist</item>
+            <item><see cref="F:Fove.ErrorCode.System_AccessDenied"/>, if the config file is not writable</item>
+            <item><see cref="F:Fove.ErrorCode.System_UnknownError"/>, if any other system error happened with the config file</item>
             </list>
             </returns>
         </member>
@@ -372,6 +388,11 @@
             Enables the detection of the pupil shape
             </summary>
         </member>
+        <member name="F:Fove.ClientCapabilities.EyeBlink">
+            <summary>
+            Enables eye blink detection and counting
+            </summary>
+        </member>
         <member name="T:Fove.ErrorCode">
             <summary>
             The error codes that the Fove system may return
@@ -424,7 +445,7 @@
         </member>
         <member name="F:Fove.ErrorCode.API_OverlappingOutPointers">
             <summary>
-            Two (or more) output parameters passed to an API function overlap in memory. 
+            Two (or more) output parameters passed to an API function overlap in memory.
             Each output parameter should be a unique, separate object.
             </summary>
         </member>
@@ -525,7 +546,7 @@
         </member>
         <member name="F:Fove.ErrorCode.UnknownError">
             <summary>
-            Errors that are unknown or couldn't be classified. 
+            Errors that are unknown or couldn't be classified.
             If possible, info will be logged about the nature of the issue.
             </summary>
         </member>
@@ -534,9 +555,9 @@
             The scene object that you attempted to register was already present in the object registry
             </summary>
         </member>
-        <member name="F:Fove.ErrorCode.Calibration_OtherRendererPrioritized">
+        <member name="F:Fove.ErrorCode.Render_OtherRendererPrioritized">
             <summary>
-            Another renderer registered to render the calibration process have a higher priority than current process.
+            Another renderer registered to render the process have a higher priority than current client
             </summary>
         </member>
         <member name="F:Fove.ErrorCode.License_FeatureAccessDenied">
@@ -567,6 +588,21 @@
         <member name="F:Fove.ErrorCode.Config_TypeMismatch">
             <summary>
             The value type of the key doesn't match
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.System_UnknownError">
+            <summary>
+            Any system error not otherwise specified
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.System_PathNotFound">
+            <summary>
+            Unix: ENOENT, Windows: ERROR_PATH_NOT_FOUND or ERROR_FILE_NOT_FOUND
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.System_AccessDenied">
+            <summary>
+            Unix: EACCES, Windows: ERROR_ACCESS_DENIED
             </summary>
         </member>
         <member name="T:Fove.CompositorLayerType">
@@ -676,6 +712,76 @@
         <member name="F:Fove.Versions.tooOldHeadsetConnected">
             <summary>
             Indicate whether the connected headset is too old or not
+            </summary>
+        </member>
+        <member name="T:Fove.LicenseInfoRaw">
+            <summary>
+            Struct with details about a FOVE license
+            </summary>
+        </member>
+        <member name="F:Fove.LicenseInfoRaw.uuid">
+            <summary>
+            128-bit uuid of this license in binary form
+            </summary>
+        </member>
+        <member name="F:Fove.LicenseInfoRaw.expirationYear">
+            <summary>
+            Expiration, year (eg. 2028), 0 if there is no expiration
+            </summary>
+        </member>
+        <member name="F:Fove.LicenseInfoRaw.expirationMonth">
+            <summary>
+            Expiration month (1 - 12), 0 if there is no expiration
+            </summary>
+        </member>
+        <member name="F:Fove.LicenseInfoRaw.expirationDay">
+            <summary>
+            Expiration day (1 - 31), 0 if there is no expiration
+            </summary>
+        </member>
+        <member name="F:Fove.LicenseInfoRaw.licenseType">
+            <summary>
+            Null-termianted type of license, such as "Professional"
+            </summary>
+        </member>
+        <member name="F:Fove.LicenseInfoRaw.licensee">
+            <summary>
+            Null-terminated name of the person or organization that this license is for, truncated as needed
+            </summary>
+        </member>
+        <member name="T:Fove.LicenseInfo">
+            <summary>
+            Alternate version of LicenseInfoRaw that's easier to work with
+            </summary>
+        </member>
+        <member name="F:Fove.LicenseInfo.uuid">
+            <summary>
+            128-bit uuid of this license, in canonical xxxxxxxx-xxxxx-xxxxx-xxxxx-xxxxxxxxx format
+            </summary>
+        </member>
+        <member name="F:Fove.LicenseInfo.expirationYear">
+            <summary>
+            Date of expiration, year (eg. 2028), 0 if there is no expiration
+            </summary>
+        </member>
+        <member name="F:Fove.LicenseInfo.expirationMonth">
+            <summary>
+            Expiration month (1 - 12), 0 if there is no expiration
+            </summary>
+        </member>
+        <member name="F:Fove.LicenseInfo.expirationDay">
+            <summary>
+            Expiration day (1 - 31), 0 if there is no expiration
+            </summary>
+        </member>
+        <member name="F:Fove.LicenseInfo.licenseType">
+            <summary>
+            Type of license, such as "Professional"
+            </summary>
+        </member>
+        <member name="F:Fove.LicenseInfo.licensee">
+            <summary>
+            Name of the person or organization that this license is for, this may be truncated
             </summary>
         </member>
         <member name="T:Fove.HeadsetHardwareInfo">
@@ -928,7 +1034,7 @@
         </member>
         <member name="F:Fove.LogLevel.Warning">
             <summary>
-            An issue requiring attention 
+            An issue requiring attention
             </summary>
         </member>
         <member name="F:Fove.LogLevel.Error">
@@ -1059,7 +1165,7 @@
         <member name="T:Fove.ProjectionParams">
             <summary>
             Struct holding information about projection frustum planes
-            <para>Values are given for a depth of 1 so that it's easy to multiply them by your near clipping plan, 
+            <para>Values are given for a depth of 1 so that it's easy to multiply them by your near clipping plan,
             for example, to get the correct values for your use.</para>
             </summary>
         </member>
@@ -1459,7 +1565,7 @@
         <member name="T:Fove.CameraObject">
             <summary>
             Represents a camera in a 3D world
-            <para>The camera view pose determine what the user is looking at 
+            <para>The camera view pose determine what the user is looking at
             and the object mask specify which objects are rendered.</para>
             </summary>
             <seealso cref="M:Fove.Headset.RegisterCameraObject(Fove.CameraObject)"/>
@@ -1683,7 +1789,7 @@
         </member>
         <member name="F:Fove.CompositorLayerEyeSubmitInfo.texInfo">
             <summary>
-            Texture to submit for this eye
+            Texture to submit for this eye; pointer to an instance of DX11Texture, GLTexture or MetalTexture
             </summary>
             <remarks>This may be null as long as the other submitted eye's texture isn't (thus allowing each eye to be submitted separately)</remarks>
         </member>
@@ -1863,7 +1969,7 @@
         <member name="F:Fove.BitmapImage.image">
             <summary>
             BMP data (including full header that contains size, format, etc)
-            The height may be negative to specify a top-down bitmap. 
+            The height may be negative to specify a top-down bitmap.
             </summary>
         </member>
         <member name="T:Fove.CalibrationTarget">
@@ -1989,6 +2095,16 @@
             Use the 1-point calibration method for user without eyeglasses, and the spiral calibration method if user has eyeglasses
             </summary>
         </member>
+        <member name="F:Fove.CalibrationMethod.ZeroPoint">
+            <summary>
+            Use the zero point calibration method (Requires license)
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationMethod.DefaultCalibration">
+            <summary>
+            Use a premade calibration profile with average human parameters built in
+            </summary>
+        </member>
         <member name="T:Fove.EyeByEyeCalibration">
             <summary>
             Indicate whether each eye should be calibrated separately or not
@@ -2009,6 +2125,26 @@
             Calibrate each eye separately, first the left, then the right (Requires license)
             </summary>
         </member>
+        <member name="T:Fove.EyeTorsionCalibration">
+            <summary>
+            Indicate whether each eye torsion calibration should be run
+            </summary>
+        </member>
+        <member name="F:Fove.EyeTorsionCalibration.Default">
+            <summary>
+            Use the settings coming from the configuration file (default: IfNeeded)
+            </summary>
+        </member>
+        <member name="F:Fove.EyeTorsionCalibration.IfEnabled">
+            <summary>
+            Run eye torsion calibration only if the capability is currently enabled
+            </summary>
+        </member>
+        <member name="F:Fove.EyeTorsionCalibration.Always">
+            <summary>
+            Always run eye torsion calibration independently of whether the capability is used
+            </summary>
+        </member>
         <member name="T:Fove.CalibrationData">
             <summary>
             Provide all the calibration data needed to render the current state of the calibration process
@@ -2024,6 +2160,11 @@
             The current state of the calibration
             </summary>
         </member>
+        <member name="F:Fove.CalibrationData.stateInfo">
+            <summary>
+            Human readable extra information about the current calibration state
+            </summary>
+        </member>
         <member name="F:Fove.CalibrationData.targetL">
             <summary>
             The current calibration target to display for the left eye
@@ -2032,6 +2173,61 @@
         <member name="F:Fove.CalibrationData.targetR">
             <summary>
             The current calibration target to display for the right eye
+            </summary>
+        </member>
+        <member name="T:Fove.HmdAdjustmentData">
+            <summary>
+            Provide all the HMD positioning data needed to render the current state of the HMD adjustment process
+            </summary>
+        </member>
+        <member name="F:Fove.HmdAdjustmentData.translation">
+            <summary>
+            The HMD translation offset in eyes camera in relative units ([-1, 1])
+            </summary>
+        </member>
+        <member name="F:Fove.HmdAdjustmentData.rotation">
+            <summary>
+            The rotation of HMD to the eye line in radian
+            </summary>
+        </member>
+        <member name="F:Fove.HmdAdjustmentData.adjustmentNeeded">
+            <summary>
+             Indicate whether the HMD adjustment GUI should be displayed to correct user HMD alignment
+            </summary>
+        </member>
+        <member name="F:Fove.HmdAdjustmentData.hasTimeout">
+            <summary>
+            Indicate if the adjustment process has timeout in which case the GUI should close
+            </summary>
+        </member>
+        <member name="F:Fove.HmdAdjustmentData.idealPositionL">
+            <summary>
+            Pixel coordinate on the left camera image for the expected ideal eye position
+            </summary>
+        </member>
+        <member name="F:Fove.HmdAdjustmentData.idealPositionR">
+            <summary>
+            Pixel coordinate on the right camera image for the expected ideal eye position
+            </summary>
+        </member>
+        <member name="F:Fove.HmdAdjustmentData.idealPositionSpanL">
+            <summary>
+            Radius of the tolerance area for the expected ideal eye position on the left camera image in pixels
+            </summary>
+        </member>
+        <member name="F:Fove.HmdAdjustmentData.idealPositionSpanR">
+            <summary>
+            Radius of the tolerance area for the expected ideal eye position on the right camera image in pixels
+            </summary>
+        </member>
+        <member name="F:Fove.HmdAdjustmentData.estimatedPositionL">
+            <summary>
+            Pixel coordinate of left eye position which is independent on eye orientation
+            </summary>
+        </member>
+        <member name="F:Fove.HmdAdjustmentData.estimatedPositionR">
+            <summary>
+            Pixel coordinate of right eye position which is independent on eye orientation
             </summary>
         </member>
         <member name="T:Fove.CalibrationOptions">
@@ -2057,6 +2253,11 @@
         <member name="F:Fove.CalibrationOptions.method">
             <summary>
             The calibration method to use
+            </summary>
+        </member>
+        <member name="F:Fove.CalibrationOptions.eyeTorsion">
+            <summary>
+            Whether to perform eye torsion calibration or not
             </summary>
         </member>
         <member name="T:Fove.Stereo`1">
@@ -2087,7 +2288,7 @@
         </member>
         <member name="M:Fove.Stereo`1.#ctor(`0,`0)">
             <summary>
-            Create a new instance with given left and right values 
+            Create a new instance with given left and right values
             </summary>
         </member>
         <member name="P:Fove.Stereo`1.Item(System.Int32)">
@@ -2159,11 +2360,6 @@
             Return true if the returned value is reliable (i.e. of good accuracy)
             </summary>
         </member>
-        <member name="P:Fove.Result`1.Failed">
-            <summary>
-            Return true if the function call returned an error, false otherwise.
-            </summary>
-        </member>
         <member name="M:Fove.Result`1.#ctor(`0,Fove.ErrorCode)">
             <summary>
             Create a new Result instance
@@ -2233,7 +2429,7 @@
             </list>
             </returns>
         </member>
-        <member name="M:Fove.Headset.GetSoftwareVersions">
+        <member name="M:Fove.Headset.QuerySoftwareVersions">
             <summary>
             Returns the current software versions
             <para>
@@ -2244,7 +2440,27 @@
             </summary>
             <returns>The current software versions, and the call success status</returns>
         </member>
-        <member name="M:Fove.Headset.GetHardwareInfo">
+        <member name="M:Fove.Headset.QueryLicenses">
+             <summary>
+             Returns information about any licenses currently activated
+             <para>
+             There is the possibility of having more than one license, or none at all, so an array is provided.
+            
+             This will only return valid, activated, licenses.
+             As soon as a license expires or is otherwise deactivated, it will no longer be returned from this.
+            
+             Usually you do not need to call this function directly.
+             To check if a feature is available, simply use the feature, and see if you get a `License_FeatureAccessDenied` error.
+             </para>
+             </summary>
+             <returns>
+             <list type="bullet">
+             <item><see cref="F:Fove.ErrorCode.None"/> if the call succeeded</item>
+             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+             </list>
+             </returns>
+        </member>
+        <member name="M:Fove.Headset.QueryHardwareInfo">
             <summary>
             Returns the hardware information
             </summary>
@@ -2279,20 +2495,20 @@
             </list>
             </returns>
         </member>
-        <member name="M:Fove.Headset.WaitAndFetchNextEyeTrackingData">
+        <member name="M:Fove.Headset.WaitForProcessedEyeFrame">
             <summary>
-            Waits for next eye camera frame to be processed and fetch the updated eye tracking data
+            Waits for next eye camera frame to be processed
             <para>
             Allows you to sync your eye tracking loop to the actual eye-camera loop.
-            On each loop, you would first call this blocking function to wait for a new frame
-            and then read the eye tracking info associated with the frame.
+            On each loop, you would first call this blocking function to wait for the next eye frame to be processed,
+            then update the local cache of eye tracking data using the fetch functions,
+            and finally get the desired eye tracking data using the getters.
             </para>
             </summary>
             <remarks>
-            Eye tracking should be enabled by registering the <see cref="F:Fove.ClientCapabilities.EyeTracking"/> before calling this function.
+            Eye tracking should be enabled by registering the `Fove_ClientCapabilities_EyeTracking` before calling this function.
             </remarks>
             <returns>
-            The latest eye frame timestamp, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
@@ -2302,11 +2518,23 @@
         </member>
         <member name="M:Fove.Headset.FetchEyeTrackingData">
             <summary>
-            Fetch the latest eye tracking related data from runtime service
+            Fetch the latest eye tracking data from the runtime service
             <para>
-            This function is never blocking, if the data is already up-to-date no operation is performed.
-            It outputs the timestamp of the new gaze information.This can be used to know if data has been
-            updated or not.
+            This function updates a local cache of eye tracking data, which other getters will fetch from.
+            </para>
+            <para>
+            A cache is used as a means to ensure that multiple getters can be called without a frame update in between.
+            Everything in the cache is from the same frame, thus you can make sequential queries for data,
+            and you will get data from the same frame as long as you do not refetch in between.
+            </para>
+            <para>
+            This function never blocks the thread. If no new data is available, no operation is performed.
+            The timestamp can be used to know if the data has been updated or not.
+            </para>
+            <para>
+            Usually, you want to call this function at the beginning of your update loop if your thread is synchronized
+            with the HMD display.On the other hand, if your thread is synchronized with the eye tracker thread,
+            you usually want to call it just after <see cref="M:Fove.Headset.WaitForProcessedEyeFrame"/>.
             </para>
             </summary>
             <remarks>
@@ -2316,7 +2544,76 @@
             The latest eye frame timestamp, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.FetchEyesImage">
+            <summary>
+            Fetch the latest eyes camera image from the runtime service
+            <para>
+            This function updates a local cache of eyes image, that can be retrieved through <see cref="M:Fove.Headset.GetEyesImage"/>.
+            </para>
+            <para>
+            A cache is used to ensure that multiple calls to <see cref="M:Fove.Headset.GetEyesImage"/> return exactly the same data
+            until we request an explicit data update through the next fetch call.
+            </para>
+            <para>
+            This function never blocks the thread. If no new data is available, no operation is performed.
+            The timestamp can be used to know if the data has been updated or not.
+            </para>
+            <para>
+            Usually, you want to call this function in conjunction with <see cref="M:Fove.Headset.FetchEyeTrackingData"/> either at the beginning
+            of your update loop of just after <see cref="M:Fove.Headset.WaitForProcessedEyeFrame"/> depending on your thread synchronization.
+            </para>
+            </summary>
+            <remarks>
+            Eyes image capability should be enabled by registering <see cref="F:Fove.ClientCapabilities.EyesImage"/> before calling this function.
+            </remarks>
+            <returns>
+            The latest eye frame timestamp, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.GetEyeTrackingDataTimestamp">
+            <summary>
+            Return the eye frame timestamp of the cached eye tracking data
+            <para>
+            Basically returns the timestamp returned by the last call to  <see cref="M:Fove.Headset.FetchEyeTrackingData"/>.
+            </para>
+            </summary>
+            <remarks>
+            <see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.
+            </remarks>
+            <returns>
+            The latest eye frame timestamp, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.GetEyesImageTimestamp">
+            <summary>
+            Return the eye frame timestamp of the cached eye tracking data
+            <para>
+            Basically returns the timestamp returned by the last call to  <see cref="M:Fove.Headset.FetchEyesImage"/>.
+            </para>
+            </summary>
+            <remarks>
+            <see cref="F:Fove.ClientCapabilities.EyesImage"/> should be registered to use this function.
+            </remarks>
+            <returns>
+            The latest eye frame timestamp, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             </list>
             </returns>
@@ -2329,6 +2626,28 @@
             <param name="eye">Specify which eye to get the value for</param>
             <returns>
             The 3D gaze vector of the specified eye, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+            <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.GetGazeVectorRaw(Fove.Eye)">
+            <summary>
+            Returns the raw gaze vector of an individual eye
+            <para>
+            Returns the eye gaze vector without any final smoothing or compensatory processing.
+            Some processing inherent to the eye tracker logic that can't avoided still happens internally.
+            </para>
+            </summary>
+            <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+            <param name="eye">Specify which eye to get the value for</param>
+            <returns>
+            The 3D raw gaze vector of the specified eye, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
@@ -2373,7 +2692,7 @@
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
             <returns>
-            The combined gaze ray, and the call success status: 
+            The combined gaze ray, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
@@ -2390,7 +2709,7 @@
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.GazeDepth"/> should be registered to use this function.</remarks>
             <returns>
-            The depth of the combine Gaze, and the call success status: 
+            The depth of the combine Gaze, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
@@ -2408,7 +2727,7 @@
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.UserAttentionShift"/> should be registered to use this function.</remarks>
             <returns>
-            Whether the user is shifting attention, and the call success status: 
+            Whether the user is shifting attention, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
@@ -2428,6 +2747,44 @@
             <param name="eye">Specify which eye to get the value for</param>
             <returns>
             The state of the specified eye, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+            <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.IsEyeBlinking(Fove.Eye)">
+            <summary>
+            Returns the blinking state of an individual eye
+            </summary>
+            <remarks><see cref="F:Fove.ClientCapabilities.EyeBlink"/> should be registered to use this function.</remarks>
+            <param name="eye">Specify which eye to get the value for</param>
+            <returns>
+            The blinking state of the specified eye, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+            <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.GetEyeBlinkCount(Fove.Eye)">
+            <summary>
+            Returns the number of blink performed for the given eye since the eye tracking service started
+            <para>To count the number blinks performed during a given period of time call this function at the
+            beginning and at the end of the period and make the subtraction of the two values.</para>
+            </summary>
+            <remarks><see cref="F:Fove.ClientCapabilities.EyeBlink"/> should be registered to use this function.</remarks>
+            <param name="eye">Specify which eye to get the value for</param>
+            <returns>
+            The blinking state of the specified eye, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
@@ -2490,7 +2847,7 @@
             Returns whether the eye tracking system is currently calibrated for glasses.
             <para>
             This basically indicates if the user was wearing glasses during the calibration or not.
-            This function returns <see cref="F:Fove.ErrorCode.Data_Uncalibrated"/> if the eye tracking system 
+            This function returns <see cref="F:Fove.ErrorCode.Data_Uncalibrated"/> if the eye tracking system
             has not been calibrated yet
             </para>
             </summary>
@@ -2679,7 +3036,7 @@
             </list>
             </returns>
         </member>
-        <member name="M:Fove.Headset.GeEyeTorsion(Fove.Eye)">
+        <member name="M:Fove.Headset.GetEyeTorsion(Fove.Eye)">
             <summary>
             Returns the user eye torsion, in degrees
             </summary>
@@ -2733,11 +3090,56 @@
             </list>
             </returns>
         </member>
+        <member name="M:Fove.Headset.StartHmdAdjustmentProcess(System.Boolean)">
+            <summary>
+            Start the HMD adjustment process. Doing this will display the HMD adjustment GUI.
+            </summary>
+            <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+            <param name="lazy">If true, the headset adjustment GUI doesn't show if the headset position is already perfect.</param>
+            <returns>
+            The shape of the pupil of the specified eye, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.TickHmdAdjustmentProcess(System.Single,System.Boolean)">
+            <summary>
+            Tick the current HMD adjustment process and retrieve data information to render the current HMD positioning state
+            <para>
+            This function is how the client declares to the FOVE system that it is available to render the HMD adjustment process.
+            The FOVE system determines which of the available renderers has the highest priority,
+            and returns to that renderer the information needed to render HMD adjustment process via the outData parameter.
+            Even while ticking this, you may get no result because either no HMD adjustment is running,
+            or a HMD adjustment process is running but some other higher priority renderer is doing the rendering.
+            </para>
+            <para>It is perfectly fine not to call this function, in which case the Fove service will automatically render the HMD adjustment process for you.</para>
+            </summary>
+            <remarks>
+            <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks></remarks>
+            <param name="deltaTime">The time elapsed since the last rendered frame</param>
+            <param name="isVisible">Indicate to the FOVE system that GUI for HMD adjustment is being drawn to the screen.
+            This allows the HMD adjustment renderer to take as much time as it wants to display fade-in/out or other animations
+            before the HMD adjustment processes is marked as completed by the `IsHmdAdjustmentGUIVisible` function.
+            </param>
+            <returns>
+            The current HMD positioning information, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.License_FeatureAccessDenied"/> if you don't have the license level required to access this feature</item>
+            <item><see cref="F:Fove.ErrorCode.Render_OtherRendererPrioritized"/> if another process has currently the priority for rendering the process</item>
+            </list>
+            </returns>
+        </member>
         <member name="M:Fove.Headset.StartEyeTrackingCalibration(Fove.CalibrationOptions)">
             <summary>
             Starts eye tracking calibration
             <para>
-            After calling this function you should assume that the user cannot see your game until 
+            After calling this function you should assume that the user cannot see your game until
             <see cref="M:Fove.Headset.IsEyeTrackingCalibrating"/> returns false.
             </para>
             </summary>
@@ -2779,6 +3181,24 @@
             </list>
             </returns>
         </member>
+        <member name="M:Fove.Headset.GetEyeTrackingCalibrationStateDetails">
+            <summary>
+            Get the detailed information about the state of the currently running calibration process.
+            <para>
+            When the calibration process is not running, this returns the final state of the previously run calibration process.
+            Value is undefined if no calibration process has begun since the service was started.
+            </para>
+            </summary>
+            <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+            <returns>
+            The current calibration details data, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            </list>
+            </returns>
+        </member>
         <member name="M:Fove.Headset.TickEyeTrackingCalibration(System.Single,System.Boolean)">
             <summary>
             Tick the current calibration process and retrieve data information to render the current calibration state.
@@ -2791,8 +3211,7 @@
             </para>
             <para>It is perfectly fine not to call this function, in which case the Fove service will automatically render the calibration process for you.</para>
             </summary>
-            <remarks>
-            <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks></remarks>
+            <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
             <param name="deltaTime">The time elapsed since the last rendered frame</param>
             <param name="isVisible">Indicate to the calibration system that something is being drawn to the screen.
             This allows the calibration renderer to take as much time as it wants to display success/failure messages
@@ -2804,7 +3223,7 @@
             <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
-            <item><see cref="F:Fove.ErrorCode.Calibration_OtherRendererPrioritized"/> if another process has currently the priority for rendering calibration process</item>
+            <item><see cref="F:Fove.ErrorCode.Render_OtherRendererPrioritized"/> if another process has currently the priority for rendering calibration process</item>
             <item><see cref="F:Fove.ErrorCode.License_FeatureAccessDenied"/> if you don't have the license level required to access this feature</item>
             </list>
             </returns>
@@ -2980,26 +3399,94 @@
         </member>
         <member name="M:Fove.Headset.FetchPoseData">
              <summary>
-             Fetch the latest headset pose related data from runtime service
+             Fetch the latest pose data, and cache it locally
              <para>
-             This function is never blocking, if the data is already up-to-date no operation is performed.
-             It outputs the timestamp of the new pose data. This can be used to know if data has been
-             updated or not.
+             This function caches the headset pose for later retrieval by <see cref="M:Fove.Headset.GetPose"/>.
+             </para>
+             <para>
+             This function never blocks the thread. If no new data is available, no operation is performed.
+             The timestamp can be used to know if the data has been updated or not.
+             </para>
+             <para>
+             The HMD pose is updated at much higher frame rate than the eye tracking data and there is no equivalent to
+             <see cref="M:Fove.Headset.WaitForProcessedEyeFrame"/> for the pose. For rendering purposes you should use the pose returned by
+             <see cref="M:Fove.Compositor.WaitForRenderPose"/> which provides the best render pose estimate for the current frame.
+             For other purposes, just fetch the HMD pose once at the beginning of your update loop. This will ensure consistent data
+             throughout all your update loop code.
              </para>
              </summary>
-             <remarks>	
-             At least one of the following capabilities need to be registered to use this function: 
-             <see cref="F:Fove.ClientCapabilities.PositionTracking"/>, <see cref="F:Fove.ClientCapabilities.OrientationTracking"/>,
-             <see cref="F:Fove.ClientCapabilities.PositionImage"/>
+             <remarks>
+             At least one of the following capabilities need to be registered to use this function:
+             <see cref="F:Fove.ClientCapabilities.PositionTracking"/>, <see cref="F:Fove.ClientCapabilities.OrientationTracking"/>
             </remarks>
              <returns>
              The latest pose frame timestamp, and the call success status:
              <list type="bullet">
              <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
              <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
              </list>
              </returns>
+        </member>
+        <member name="M:Fove.Headset.FetchPositionImage">
+             <summary>
+             Fetch the latest position camera image, and cache it locally
+             <para>
+             This function caches the position camera image for later retrieval by <see cref="M:Fove.Headset.GetPositionImage"/>.
+             </para>
+             <para>
+             This function never blocks the thread. If no new data is available, no operation is performed.
+             The timestamp can be used to know if the data has been updated or not.
+             </para>
+             <para>
+             There is no equivalent to <see cref="M:Fove.Headset.WaitForProcessedEyeFrame"/> for the position image that allow you to synchronize
+             with the position image update. We recommend you to fetch the position image only once every beginning of update
+             loop if needed to ensure consistent data throughout the update loop code.
+             </para>
+             </summary>
+             <remarks>
+             <see cref="F:Fove.ClientCapabilities.PositionImage"/> should to be registered to use this function.
+            </remarks>
+             <returns>
+             The latest pose frame timestamp, and the call success status:
+             <list type="bullet">
+             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
+             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+             </list>
+             </returns>
+        </member>
+        <member name="M:Fove.Headset.GetEyePoseDataTimestamp">
+            <summary>
+            Return the frame timestamp of the cached pose data
+            <para>
+            Basically returns the timestamp returned by the last call to  <see cref="M:Fove.Headset.FetchPoseData"/>.
+            </para>
+            </summary>
+            <returns>
+            The latest eye frame timestamp, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if neither <see cref="F:Fove.ClientCapabilities.PositionTracking"/> nor <see cref="F:Fove.ClientCapabilities.OrientationTracking"/> has been registered prior to this call</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.GetPositionImageTimestamp">
+            <summary>
+            Return the frame timestamp of the cached pose data
+            <para>
+            Basically returns the timestamp returned by the last call to  <see cref="M:Fove.Headset.FetchPoseData"/>.
+            </para>
+            </summary>
+            <returns>
+            The latest eye frame timestamp, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if <see cref="F:Fove.ClientCapabilities.PositionImage"/> hasn't been registered prior to this call</item>
+            </list>
+            </returns>
         </member>
         <member name="M:Fove.Headset.GetPose">
             <summary>
@@ -3021,7 +3508,7 @@
             <summary>
             Returns the position camera image
             <para>
-            The position image is synchronized with and fetched at the same as the pose 
+            The position image is synchronized with and fetched at the same as the pose
             during the call to <see cref="M:Fove.Headset.FetchPoseData"/>.
             </para>
             </summary>
@@ -3138,8 +3625,8 @@
             <seealso cref="M:Fove.Headset.DeleteProfile(System.String)"/>
             <seealso cref="M:Fove.Headset.ListProfiles"/>
             <seealso cref="M:Fove.Headset.SetCurrentProfile(System.String)"/>
-            <seealso cref="M:Fove.Headset.GetCurrentProfile"/>
-            <seealso cref="M:Fove.Headset.GetProfileDataPath(System.String)"/>
+            <seealso cref="M:Fove.Headset.QueryCurrentProfile"/>
+            <seealso cref="M:Fove.Headset.QueryProfileDataPath(System.String)"/>
         </member>
         <member name="M:Fove.Headset.HasAccessToFeature(System.String,System.Boolean@)">
             <summary>
@@ -3175,8 +3662,8 @@
             <seealso cref="M:Fove.Headset.DeleteProfile(System.String)"/>
             <seealso cref="M:Fove.Headset.ListProfiles"/>
             <seealso cref="M:Fove.Headset.SetCurrentProfile(System.String)"/>
-            <seealso cref="M:Fove.Headset.GetCurrentProfile"/>
-            <seealso cref="M:Fove.Headset.GetProfileDataPath(System.String)"/>
+            <seealso cref="M:Fove.Headset.QueryCurrentProfile"/>
+            <seealso cref="M:Fove.Headset.QueryProfileDataPath(System.String)"/>
         </member>
         <member name="M:Fove.Headset.DeleteProfile(System.String)">
             <summary>
@@ -3199,8 +3686,8 @@
             <seealso cref="M:Fove.Headset.RenameProfile(System.String,System.String)"/>
             <seealso cref="M:Fove.Headset.ListProfiles"/>
             <seealso cref="M:Fove.Headset.SetCurrentProfile(System.String)"/>
-            <seealso cref="M:Fove.Headset.GetCurrentProfile"/>
-            <seealso cref="M:Fove.Headset.GetProfileDataPath(System.String)"/>
+            <seealso cref="M:Fove.Headset.QueryCurrentProfile"/>
+            <seealso cref="M:Fove.Headset.QueryProfileDataPath(System.String)"/>
         </member>
         <member name="M:Fove.Headset.ListProfiles">
             <summary>
@@ -3217,8 +3704,8 @@
             <seealso cref="M:Fove.Headset.RenameProfile(System.String,System.String)"/>
             <seealso cref="M:Fove.Headset.DeleteProfile(System.String)"/>
             <seealso cref="M:Fove.Headset.SetCurrentProfile(System.String)"/>
-            <seealso cref="M:Fove.Headset.GetCurrentProfile"/>
-            <seealso cref="M:Fove.Headset.GetProfileDataPath(System.String)"/>
+            <seealso cref="M:Fove.Headset.QueryCurrentProfile"/>
+            <seealso cref="M:Fove.Headset.QueryProfileDataPath(System.String)"/>
         </member>
         <member name="M:Fove.Headset.SetCurrentProfile(System.String)">
             <summary>
@@ -3245,10 +3732,10 @@
             <seealso cref="M:Fove.Headset.RenameProfile(System.String,System.String)"/>
             <seealso cref="M:Fove.Headset.DeleteProfile(System.String)"/>
             <seealso cref="M:Fove.Headset.ListProfiles"/>
-            <seealso cref="M:Fove.Headset.GetCurrentProfile"/>
-            <seealso cref="M:Fove.Headset.GetProfileDataPath(System.String)"/>
+            <seealso cref="M:Fove.Headset.QueryCurrentProfile"/>
+            <seealso cref="M:Fove.Headset.QueryProfileDataPath(System.String)"/>
         </member>
-        <member name="M:Fove.Headset.GetCurrentProfile">
+        <member name="M:Fove.Headset.QueryCurrentProfile">
             <summary>
             Gets the current profile
             </summary>
@@ -3264,9 +3751,9 @@
             <seealso cref="M:Fove.Headset.DeleteProfile(System.String)"/>
             <seealso cref="M:Fove.Headset.ListProfiles"/>
             <seealso cref="M:Fove.Headset.SetCurrentProfile(System.String)"/>
-            <seealso cref="M:Fove.Headset.GetProfileDataPath(System.String)"/>
+            <seealso cref="M:Fove.Headset.QueryProfileDataPath(System.String)"/>
         </member>
-        <member name="M:Fove.Headset.GetProfileDataPath(System.String)">
+        <member name="M:Fove.Headset.QueryProfileDataPath(System.String)">
             <summary>
             Gets the data folder for a given profile
             <para>Allows you to retrieve a filesytem directory where third party apps can write data associated with this profile. This directory will be created before return.</para>
@@ -3294,7 +3781,7 @@
             <seealso cref="M:Fove.Headset.DeleteProfile(System.String)"/>
             <seealso cref="M:Fove.Headset.ListProfiles"/>
             <seealso cref="M:Fove.Headset.SetCurrentProfile(System.String)"/>
-            <seealso cref="M:Fove.Headset.GetCurrentProfile"/>
+            <seealso cref="M:Fove.Headset.QueryCurrentProfile"/>
         </member>
         <member name="M:Fove.Headset.CreateCompositor">
             <summary>

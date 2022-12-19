@@ -266,9 +266,8 @@ namespace Fove.Unity
         /// <summary>
         /// Get eye rays describing where in the scene each of the user's eyes is looking.
         /// </remarks>
-        /// <param name="immediate">If true re-query the value to the HMD, otherwise it returns the value cached at the beginning of the frame.</param>
         /// <returns>Eye rays describing the user's gaze in world space.</returns>
-        public Result<Ray> GetGazeVector(Eye eye)
+        public Result<Ray> GetGazeRay(Eye eye)
         {
             return eyeRays[eye];
         }
@@ -276,7 +275,7 @@ namespace Fove.Unity
         /// <summary>
         /// Returns eyes gaze ray resulting from the two eye gazes combined together, in the world coordinate space.
         /// <para>
-        /// To get individual eye rays use <see cref="GetGazeVector(Eye)"/> instead
+        /// To get individual eye rays use <see cref="GetGazeRay(Eye)"/> instead
         /// </para>
         /// <para>
         /// To get the user gaze in the headse coordinate space use the <see cref="FoveManager.GetCombinedGazeRay()"/> instead. 

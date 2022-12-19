@@ -1,5 +1,7 @@
 ﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
 Shader "Unlit/TextureColor"
 {
     Properties
@@ -41,7 +43,7 @@ Shader "Unlit/TextureColor"
                 v2f o;
                 // transform position to clip space
                 // (multiply with model*view*projection matrix)
-                o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
+                o.vertex = UnityObjectToClipPos(v.vertex);
                 // just pass the texture coordinate
                 o.uv = v.uv;
                 return o;

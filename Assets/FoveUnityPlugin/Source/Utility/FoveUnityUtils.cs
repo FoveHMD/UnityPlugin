@@ -152,6 +152,31 @@ namespace Fove.Unity
             return new BoundingBox { center = ToVec3(bounds.center), extend = ToVec3(bounds.extents) };
         }
 
+        internal static Result<Vector2> ToUnity(this Result<Vec2> res)
+        {
+            return new Result<Vector2>(res.value.ToVector2(), res.error);
+        }
+
+        internal static Result<Vector3> ToUnity(this Result<Vec3> res)
+        {
+            return new Result<Vector3>(res.value.ToVector3(), res.error);
+        }
+
+        internal static Result<Ray> ToUnity(this Result<EyeRay> res)
+        {
+            return new Result<Ray>(res.value.ToRay(), res.error);
+        }
+
+        internal static Result<EyeShape> ToUnity(this Result<Fove.EyeShape> res)
+        {
+            return new Result<EyeShape>((EyeShape)res.value, res.error);
+        }
+
+        internal static Result<PupilShape> ToUnity(this Result<Fove.PupilShape> res)
+        {
+            return new Result<PupilShape>((PupilShape)res.value, res.error);
+        }
+
         internal static Result<Ray> CalculateWorldGazeVector(ref Matrix4x4 transform, ref Vector3 eyeOffset, ref Result<Vector3> eyeVector)
         {
             var position = transform.MultiplyPoint(eyeOffset);

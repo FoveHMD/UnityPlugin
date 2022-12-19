@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using Fove.Unity;
+using Fove;
 
 public class CustomCalibrationRenderer : MonoBehaviour 
 {
@@ -10,6 +11,8 @@ public class CustomCalibrationRenderer : MonoBehaviour
     private Canvas canvas;
 
     private float timeSinceCompletion;
+    private float waitTime;
+    private CalibrationState lastState;
 
     // Use this for initialization
     void Start () 
@@ -27,10 +30,13 @@ public class CustomCalibrationRenderer : MonoBehaviour
     void Update () 
     {
         var isVisible = spriteRenders[0].enabled || spriteRenders[1].enabled || canvas.enabled;
+        var dt = (lastState == CalibrationState.HeadsetAdjustment || lastState == CalibrationState.WaitingForUser) && waitTime < 0 || lastState == CalibrationState.CollectingData 
+            ? Time.deltaTime
+            : 0;
 
         // tick and pull calibration state
-        var result = FoveManager.TickEyeTrackingCalibration(Time.deltaTime, isVisible);
-        if (result.Failed)
+        var result = FoveManager.TickEyeTrackingCalibration(dt, isVisible);
+        if (!result.IsValid)
         {
             Debug.LogError("Failed to tick calibration. Error:" + result.error);
             spriteRenders[0].enabled = false;
@@ -66,6 +72,9 @@ public class CustomCalibrationRenderer : MonoBehaviour
         {
             case Fove.CalibrationState.WaitingForUser:
                 text.text = "Look at the target";
+                break;
+            case Fove.CalibrationState.HeadsetAdjustment:
+                text.text = waitTime > 0 ? "Adjusting HMD..." : "";
                 break;
             case Fove.CalibrationState.ProcessingData:
                 text.text = "Processing...";
@@ -110,6 +119,16 @@ public class CustomCalibrationRenderer : MonoBehaviour
         else
         {
             timeSinceCompletion = 0;
+        }
+
+        if (lastState != calibrationData.state)
+        {
+            lastState = calibrationData.state;
+            waitTime = 2;
+        }
+        else
+        {
+            waitTime -= Time.deltaTime;
         }
     }
 }

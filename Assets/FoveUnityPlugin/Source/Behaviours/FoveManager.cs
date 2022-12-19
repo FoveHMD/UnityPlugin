@@ -180,12 +180,12 @@ namespace Fove.Unity
         }
 
         /// <summary>
-        /// Get the version of the Fove client library. This returns "[major].[minor].[build]".
+        /// Query the version of the Fove client library. This returns "[major].[minor].[build]".
         /// </summary>
         /// <returns>A string representing the client library version, and the call success status</returns>
-        public static Result<string> GetClientVersion()
+        public static Result<string> QueryClientVersion()
         {
-            var result = Headset.GetSoftwareVersions();
+            var result = Headset.QuerySoftwareVersions();
 
             var versionString = result.IsValid
                 ? "" + result.value.clientMajor + "." + result.value.clientMinor + "." + result.value.clientBuild
@@ -195,18 +195,27 @@ namespace Fove.Unity
         }
 
         /// <summary>
-        /// Get the version of the installed runtime service. This returns "[major].[minor].[build]".
+        /// Query the version of the installed runtime service. This returns "[major].[minor].[build]".
         /// </summary>
         /// <returns>A string representing the runtime library version, and the call success status</returns>
-        public static Result<string> GetRuntimeVersion()
+        public static Result<string> QueryRuntimeVersion()
         {
-            var result = Headset.GetSoftwareVersions();
+            var result = Headset.QuerySoftwareVersions();
 
             var versionString = result.IsValid
                 ? "" + result.value.runtimeMajor + "." + result.value.runtimeMinor + "." + result.value.runtimeBuild
                 : "Unknown";
 
             return new Result<string>() { value = versionString, error = result.error };
+        }
+
+        /// <summary>
+        /// Returns information about any licenses currently activated.
+        /// </summary>
+        /// <returns>Info about zero or more licenses</returns>
+        public static Result<List<Fove.LicenseInfo>> QueryLicenses()
+        {
+            return Headset.QueryLicenses();
         }
 
         /// <summary>
@@ -251,8 +260,32 @@ namespace Fove.Unity
         /// </returns>
         public static Result<Vector3> GetHmdGazeVector(Eye eye)
         {
-            var result = Headset.GetGazeVector(eye);
-            return new Result<Vector3>(result.value.ToVector3(), result.error);
+            return Headset.GetGazeVector(eye).ToUnity();
+        }
+
+        /// <summary>
+        /// Get the direction of the raw gaze of the specified eye, in the HMD coordinate space.
+        /// <para>
+        /// Returns the eye gaze vector without any final smoothing or compensatory processing.
+        /// Some processing inherent to the eye tracker logic that can't avoided still happens internally.
+        /// </para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <param name="eye">Specify which eye to get the value for</param>
+        /// <returns>
+        /// The 3D raw gaze vector of the specified eye in the HMD coordinate space, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<Vector3> GetHmdGazeVectorRaw(Eye eye)
+        {
+            return Headset.GetGazeVectorRaw(eye).ToUnity();
         }
 
         /// <summary>
@@ -282,8 +315,7 @@ namespace Fove.Unity
         /// </returns>
         public static Result<Vector2> GetGazeScreenPosition(Eye eye)
         {
-            var result = Headset.GetGazeScreenPosition(eye);
-            return new Result<Vector2>(result.value.ToVector2(), result.error);
+            return Headset.GetGazeScreenPosition(eye).ToUnity();
         }
 
         /// <summary>
@@ -308,8 +340,7 @@ namespace Fove.Unity
         /// </returns>
         public static Result<Ray> GetHmdCombinedGazeRay()
         {
-            var result = Headset.GetCombinedGazeRay();
-            return new Result<Ray>(result.value.ToRay(), result.error);
+            return Headset.GetCombinedGazeRay().ToUnity();
         }
 
         /// <summary>
@@ -330,7 +361,7 @@ namespace Fove.Unity
         public static Result<float> GetCombinedGazeDepth()
         {
             var result = Headset.GetCombinedGazeDepth();
-            return new Result<float>(Instance.renderScale * result.value, result.error);
+            return new Result<float>(Instance.worldScale * result.value, result.error);
         }
 
         /// <summary>
@@ -666,7 +697,7 @@ namespace Fove.Unity
         /// </returns>
         public static Result<float> GetEyeTorsion(Eye eye)
         {
-            return Headset.GeEyeTorsion(eye);
+            return Headset.GetEyeTorsion(eye);
         }
 
         /// <summary>
@@ -687,8 +718,7 @@ namespace Fove.Unity
         /// </returns>
         public static Result<EyeShape> GetEyeShape(Eye eye)
         {
-            var result = Headset.GetEyeShape(eye);
-            return new Result<EyeShape>((EyeShape)result.value, result.error);
+            return Headset.GetEyeShape(eye).ToUnity();
         }
 
         /// <summary>
@@ -709,8 +739,58 @@ namespace Fove.Unity
         /// </returns>
         public static Result<PupilShape> GetPupilShape(Eye eye)
         {
-            var result = Headset.GetPupilShape(eye);
-            return new Result<PupilShape>((PupilShape)result.value, result.error);
+            return Headset.GetPupilShape(eye).ToUnity();
+        }
+
+        /// <summary>
+        /// Start the HMD adjustment process. Doing this will display the HMD adjustment GUI.
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <param name="lazy">If true, the headset adjustment GUI doesn't show if the headset position is already perfect.</param>
+        /// <returns>
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// </list>
+        /// </returns>
+        public static Result StartHmdAdjustmentProcess(bool lazy = true)
+        {
+            return Headset.StartHmdAdjustmentProcess(lazy);
+        }
+
+        /// <summary>
+        /// Tick the current HMD adjustment process and retrieve data information to render the current HMD positioning state
+        /// <para>
+        /// This function is how the client declares to the FOVE system that it is available to render the HMD adjustment process.
+        /// The FOVE system determines which of the available renderers has the highest priority,
+        /// and returns to that renderer the information needed to render HMD adjustment process via the outData parameter.
+        /// Even while ticking this, you may get no result because either no HMD adjustment is running,
+        /// or a HMD adjustment process is running but some other higher priority renderer is doing the rendering.
+        /// </para>
+        /// <para>It is perfectly fine not to call this function, in which case the Fove service will automatically render the HMD adjustment process for you.</para>
+        /// </summary>
+        /// <remarks>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks></remarks>
+        /// <param name="deltaTime">The time elapsed since the last rendered frame</param>
+        /// <param name="isVisible">Indicate to the FOVE system that GUI for HMD adjustment is being drawn to the screen.
+        /// This allows the HMD adjustment renderer to take as much time as it wants to display fade-in/out or other animations
+        /// before the HMD adjustment processes is marked as completed by the `IsHmdAdjustmentGUIVisible` function.
+        /// </param>
+        /// <returns>
+        /// The current HMD positioning information, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success.</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.License_FeatureAccessDenied"/> if you don't have the license level required to access this feature</item>
+        /// <item><see cref="ErrorCode.Calibration_OtherRendererPrioritized"/> if another process has currently the priority for rendering the process</item>
+        /// </list>
+        /// </returns>
+        public static Result<HmdAdjustmentData> TickHmdAdjustmentProcess(float deltaTime, bool isVisible)
+        {
+            var result = Headset.TickHmdAdjustmentProcess(deltaTime, isVisible);
+            return new Result<HmdAdjustmentData>((HmdAdjustmentData)result.value, result.error);
         }
 
         /// <summary>
@@ -766,6 +846,28 @@ namespace Fove.Unity
         public static Result<CalibrationState> GetEyeTrackingCalibrationState()
         {
             return Headset.GetEyeTrackingCalibrationState();
+        }
+
+        /// <summary>
+        /// Get the detailed information about the state of the currently running calibration process.
+        /// <para>	
+        /// When the calibration process is not running, this returns the final state of the previously run calibration process.
+        /// Value is undefined if no calibration process has begun since the service was started.
+        /// </para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// The current calibration details data, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success.</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// </list>
+        /// </returns>
+        public static Result<CalibrationData> GetEyeTrackingCalibrationStateDetails()
+        {
+            var result = Headset.GetEyeTrackingCalibrationStateDetails();
+            return new Result<CalibrationData>((CalibrationData)result.value, result.error);
         }
 
         /// <summary>
@@ -1202,7 +1304,7 @@ namespace Fove.Unity
         }
 
         /// <summary>
-        /// Gets the current profile
+        /// Querys the current profile
         /// </summary>
         /// <returns>
         /// The name of the profile currently used, and the call success status:
@@ -1216,14 +1318,14 @@ namespace Fove.Unity
         /// <seealso cref="DeleteProfile(string)"/>
         /// <seealso cref="ListProfiles()"/>
         /// <seealso cref="SetCurrentProfile(string)"/>
-        /// <seealso cref="GetProfileDataPath(string)"/>
-        public static Result<string> GetCurrentProfile()
+        /// <seealso cref="QueryProfileDataPath(string)"/>
+        public static Result<string> QueryCurrentProfile()
         {
-            return Headset.GetCurrentProfile();
+            return Headset.QueryCurrentProfile();
         }
 
         /// <summary>
-        /// Gets the data folder for a given profile
+        /// Querys the data folder for a given profile
         /// <para>Allows you to retrieve a filesytem directory where third party apps can write data associated with this profile. This directory will be created before return.</para>
         /// <para>Since multiple applications may write stuff to a profile, please prefix any files you create with something unique to your application.</para>
         /// <para>There are no special protections on profile data, and it may be accessible to any other app on the system. Do not write sensitive data here.</para>
@@ -1249,10 +1351,10 @@ namespace Fove.Unity
         /// <seealso cref="DeleteProfile(string)"/>
         /// <seealso cref="ListProfiles()"/>
         /// <seealso cref="SetCurrentProfile(string)"/>
-        /// <seealso cref="GetCurrentProfile()"/>
-        public static Result<string> GetProfileDataPath(string profileName)
+        /// <seealso cref="QueryCurrentProfile()"/>
+        public static Result<string> QueryProfileDataPath(string profileName)
         {
-            return Headset.GetProfileDataPath(profileName);
+            return Headset.QueryProfileDataPath(profileName);
         }
 
         /// <summary>
@@ -1268,6 +1370,74 @@ namespace Fove.Unity
         public static Result<Texture2D> GetMirrorTexture()
         {
             return Instance.GetMirrorTextureInternal();
+        }
+
+        /// <summary>
+        /// Return the eye frame timestamp of the cached eye tracking data
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// The frame timestamp of the currently cached data and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// </list>
+        /// </returns>
+        public static Result<FrameTimestamp> GetEyeTrackingDataTimestamp()
+        {
+            return Headset.GetEyeTrackingDataTimestamp();
+        }
+
+        /// <summary>
+        /// Return the eye frame timestamp of the cached eyes image
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyesImage"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// The frame timestamp of the currently cached data and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// </list>
+        /// </returns>
+        public static Result<FrameTimestamp> GetEyesImageTimestamp()
+        {
+            return Headset.GetEyesImageTimestamp();
+        }
+
+        /// <summary>
+        /// Return the frame timestamp of the cached pose data
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.OrientationTracking"/> or/and <see cref="ClientCapabilities.PositionTracking"/>  should be registered to use this function.</remarks>
+        /// <returns>
+        /// The frame timestamp of the currently cached data and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// </list>
+        /// </returns>
+        public static Result<FrameTimestamp> GetPoseDataTimestamp()
+        {
+            return Headset.GetEyePoseDataTimestamp();
+        }
+
+        /// <summary>
+        /// Return the frame timestamp of the cached position image
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.PositionImage"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// The frame timestamp of the currently cached data and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// </list>
+        /// </returns>
+        public static Result<FrameTimestamp> GetPositionImageTimestamp()
+        {
+            return Headset.GetPositionImageTimestamp();
         }
     }
 }

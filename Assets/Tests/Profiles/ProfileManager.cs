@@ -75,9 +75,9 @@ public class ProfileManager : MonoBehaviour {
 		string selectedProfile = controllers[selectedIndex].ProfileName;
 		string selectedProfileDataPath = "";
 		
-		var currProfile = FoveManager.GetCurrentProfile().value;
+		var currProfile = FoveManager.QueryCurrentProfile().value;
 		if (!string.IsNullOrEmpty(selectedProfile))
-			selectedProfileDataPath = FoveManager.GetProfileDataPath(selectedProfile);
+			selectedProfileDataPath = FoveManager.QueryProfileDataPath(selectedProfile);
 
 		dataPathText.text = "Data Path: \"" + selectedProfileDataPath + "\"";
 

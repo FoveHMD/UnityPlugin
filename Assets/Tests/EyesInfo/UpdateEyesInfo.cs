@@ -23,7 +23,7 @@ public class UpdateEyesInfo : MonoBehaviour
 
     static string toMilliString(Fove.Result<float> sizeInMeter)
     {
-        if (sizeInMeter.Failed)
+        if (!sizeInMeter.IsValid)
             return sizeInMeter.error.ToString();
 
         return (sizeInMeter * 1000f).ToString("F1") + "mm";
@@ -61,7 +61,7 @@ public class UpdateEyesInfo : MonoBehaviour
         infoTexts.pupilText.text = toMilliString(FoveManager.GetPupilRadius(eye));
 
         var torsion = FoveManager.GetEyeTorsion(eye);
-        var torsionText = torsion.Failed ? torsion.error.ToString() : torsion.value.ToString("F2");
+        var torsionText = torsion.IsValid ? torsion.value.ToString("F2") : torsion.error.ToString();
         infoTexts.torsionText.text = torsionText;
     }
 

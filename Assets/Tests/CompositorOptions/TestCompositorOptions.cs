@@ -32,9 +32,9 @@ public class TestCompositorOptions : MonoBehaviour {
 
         // update the material color
         checkerRenderer.material.color = new Color(
-            /*fove.DistortionDisabled*/ false? 0: 1, 
+            /*fove.DistortionDisabled ? 0: */ 1, 
             fove.TimewarpDisabled ? 0 : 1, 
-            /*fove.FadingDisabled*/ false ? 0 : 1);
+            /*fove.FadingDisabled ? 0 : */ 1);
     }
 
     private static string GetStatusText(bool disabled)

@@ -5,19 +5,21 @@ Nobody likes to read a whole document. We get it. We'll try to keep this brief.
 ## Things to know
 
 * Prefabs are in `FoveUnityPlugin/Prefabs`.
-* Either drag a prefab in, or add `FoveInterface` to your camera object in the scene.
-* If you want the camera to NOT be near (0, 0, 0), the camera needs to be a child object. You can also use the `Fove Rig` prefab.
+* Either drag a prefab in your scene, or add the `FoveInterface` component to your camera object in the scene.
+* If you want the camera NOT to be near (0, 0, 0), the camera needs to be a child object. You can also use the `Fove Rig` prefab.
 
 ## Doing Eye Tracking
 
-You have two general ways to get gaze info. For both of these, you will need a reference in-code for a `FoveInterface`. (You can either grab this at runtime or -- even better -- add a public `FoveInterface` to your custom `MonoBehaviour` and attach the interface via the Inspector view.)
+You have three general ways to get user gaze info. For the last two, you will need a reference in-code to a `FoveInterface`. (You can either grab this at runtime or -- even better -- add a public `FoveInterface` to your custom `MonoBehaviour` and attach the interface via the Inspector view.)
 
-1. Detect gaze collision with colliders using GazeCast functions on each FoveInterface instance.
+1. To know which object of your application the user is currently gazing at:
+   * Add the `GazableObject` component to game objects that you want to be tracked. 
+   * Get the currently gazed object using `Result<GameObject> FoveManager.GetGazedObject()`.
+2. To detect gaze collision with colliders of the scene,
+   *  Use the GazeCast functions of the FoveInterface instance.
    * `bool isLooking = yourFoveInterface.Gazecast(someCollider);`
    * There are a lot of GazeCast variants -- we mostly have parity with Unity's own `RayCast` functions.
-2. Get gaze convergence from a FoveInterface instance.
-   * `GazeConvergenceData gaze = yourFoveInterface.GetGazeConvergence();`
-   * The result has a Unity `Ray` object and a `float` value.
-     * `ray` indicates the world point between both eyes and the direction of your gaze.
-     * `distance` indicates how far along the ray the eyes converge.
-     * Example: `Vector3 convergence = gaze.ray * ray.distance;`
+3. To get more precise gaze information, you can query gaze rays from a FoveInterface instance:
+   * `Result<Ray> gazeRay = yourFoveInterface.GetCombinedGazeRay();`: get the gaze ray in the world space obtained by combining both eye ray information
+   * `Result<float> gazeDepth = yourFoveInterface.GetCombinedGazeDepth();`:  get the depth at which the user is looking along the combined gaze ray
+   * `Result<Ray> eyeRay = yourFoveInterface.GetGazeRay(eye);`: get the gaze ray of the specified eye

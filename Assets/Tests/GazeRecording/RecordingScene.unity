@@ -266,12 +266,27 @@ MonoBehaviour:
   overwriteExistingFile: 0
   exportFields:
     ApplicationTime: 1
+    EyeFrameId: 1
+    EyeFrameTimestamp: 1
     UserMark: 1
-    GazeConvergence: 1
+    HeadsetOrientation: 1
+    HeadsetPosition: 1
+    CombinedRay: 1
+    GazeDepth: 1
     EyeRays: 1
-    EyesClosed: 1
+    EyeRaysRaw: 1
+    EyesState: 1
     PupilsRadius: 1
     GazedObject: 1
+    EyeTorsion: 1
+    UserPresence: 1
+    UserAttentionShift: 1
+    IPD: 1
+    IOD: 1
+    EyeballRadius: 1
+    ScreenGaze: 1
+    EyeShape: 1
+    PupilShape: 1
   writeAtDataCount: 1000
 --- !u!4 &1031986751
 Transform:

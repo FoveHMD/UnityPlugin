@@ -13,7 +13,7 @@
         /// <summary>
         /// Minor number
         /// </summary>
-        public const int MINOR = 1;
+        public const int MINOR = 3;
 
         /// <summary>
         /// Path number

@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 
 using System.Linq;
+using AOT;
 
 namespace Fove.Unity
 {
@@ -108,6 +109,7 @@ namespace Fove.Unity
             Debug,   // Generic debugging info can go here          
         };
 
+        [MonoPInvokeCallback(typeof(LogSinkDelegate))]
         private static void LogSinkCallback(IntPtr logLevel, string str)
         {
             str = "[FOVE] " + str;
@@ -133,7 +135,6 @@ namespace Fove.Unity
         private EyeTextures MakeNewEyeTextures(int layerId, Vec2i dims)
         {
             EyeTextures result;
-#if UNITY_2017_1_OR_NEWER
             RenderTextureDescriptor desc = new RenderTextureDescriptor (
                 dims.x, dims.y, RenderTextureFormat.Default, 32 );
 
@@ -143,14 +144,6 @@ namespace Fove.Unity
                 right = new RenderTexture(desc),
                 areNew = true
             };
-#else
-            result = new EyeTextures
-            {
-                left = new RenderTexture(dims.x, dims.y, 32, RenderTextureFormat.Default),
-                right = new RenderTexture(dims.x, dims.y, 32, RenderTextureFormat.Default),
-                areNew = true
-            };
-#endif
 
             eyeTextures[layerId] = result;
 
@@ -306,7 +299,8 @@ namespace Fove.Unity
                 return capabilities;
             };
 
-            var aggregatedCaps = ClientCapabilities.None;
+            // always enable the orientation capability as it is needed when submitting frames for proper time-warping
+            var aggregatedCaps = ClientCapabilities.OrientationTracking;
 
             foreach (var interfaceList in m_sInterfaceStacks.Values)
                 foreach (var interfaceInfo in interfaceList)
@@ -534,13 +528,17 @@ namespace Fove.Unity
 
             // Fetch the new eye tracking data from the service
             var fetchResult = Headset.FetchEyeTrackingData();
-            if (fetchResult.error == ErrorCode.Connect_NotConnected)
+            if (fetchResult.error == ErrorCode.Data_NoUpdate)
                 return false;
 
             // Fetch the new pose data from the service
             fetchResult = Headset.FetchPoseData();
-            if (fetchResult.error == ErrorCode.Connect_NotConnected)
+            if (fetchResult.error == ErrorCode.Data_NoUpdate)
                 return false;
+
+            // Update images (if caps not registered, early error exit is triggered)
+            Headset.FetchEyesImage();
+            Headset.FetchPositionImage();
 
             // HMD pose
             // It is taken from the UnityFunction native plugin to be sure to return
@@ -592,7 +590,7 @@ namespace Fove.Unity
             var isCalibrating = IsEyeTrackingCalibrating();
             if (isCalibrating.IsValid && isCalibrating != wasCalibrating)
             {
-                if (wasCalibrating)
+                if (isCalibrating)
                 {
                     var handler = EyeTrackingCalibrationStarted;
                     if (handler != null)
@@ -674,7 +672,7 @@ namespace Fove.Unity
                 var imgResult = getImageFunc();
 
                 texResult.error = imgResult.error;
-                if (texResult.Failed)
+                if (!texResult.IsValid)
                     return;
 
                 if (cacheImg != null && imgResult.value.Timestamp <= cacheImg.Timestamp)
