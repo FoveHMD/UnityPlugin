@@ -176,7 +176,7 @@ For this function to work properly, you need to add a `GazableObject` component 
 The `Velocity Source` parameter of the `GazableObject` specify where and how the calculation of object velocity should be performed:
 - `Late Update`: this is the most common case. Use this if you modify the position of your object in the Unity `Update` function.
 - `Fixed Update`: Use this if you modify the position of your object in the Unity `FixedUpdate` function.
-- `Rigitbody`: Use this if the position of your object is coming from a rigitbody.
+- `Rigidbody`: Use this if the position of your object is coming from a rigidbody.
 
 To disable the detection of specific objects you have several options:
 - Using the `FoveInterface.GazeCastCullMask` you can disable detection of all objects of a given layer.
