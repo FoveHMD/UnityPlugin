@@ -25,21 +25,26 @@ public class FoveInterfaceEditor : Editor
     SerializedProperty _compositorDisableTimewarp;
     //SerializedProperty _compositorDisableDistortion;
 
+    SerializedProperty _dismissCameraEnabledWarning;
+    SerializedProperty _dismissCameraDisabledWarning;
+
     private static bool _showGazeCast;
     private static bool _showCullingMasks;
     private static bool _showCompositorAttribs;
-
-    protected GUIStyle helpStyle;
+    
     private GUIContent fetchPositionLabel = new GUIContent("- position");
     private GUIContent fetchGazeLabel = new GUIContent("- gaze");
     private GUIContent fetchOrientationLabel = new GUIContent("- orientation");
     private GUIContent castCullMaskLabel = new GUIContent("Cull Mask");
     private GUIContent registerCameraLabel = new GUIContent("Register Camera");
 
-    protected void CheckForNull(System.Object obj, string name)
+    protected SerializedProperty GetAndCheckSeriazedProperty(string name)
     {
-        if (obj == null)
-            Debug.LogWarning(name + " was null");
+        var ret = serializedObject.FindProperty(name);
+        if (ret == null)
+            Debug.LogWarning("Can't find '" + name + "' property");
+
+        return ret;
     }
 
     protected void OnEnable()
@@ -49,34 +54,25 @@ public class FoveInterfaceEditor : Editor
 
     protected virtual void EnableProperties()
     {
-        _gaze = serializedObject.FindProperty("fetchGaze");
-        CheckForNull(_gaze, "_gaze");
-        _orientation = serializedObject.FindProperty("fetchOrientation");
-        CheckForNull(_orientation, "_orientation");
-        _position = serializedObject.FindProperty("fetchPosition");
-        CheckForNull(_position, "_position");
+        _gaze = GetAndCheckSeriazedProperty("fetchGaze");
+        _orientation = GetAndCheckSeriazedProperty("fetchOrientation");
+        _position = GetAndCheckSeriazedProperty("fetchPosition");
         
-        _eyeTargets = serializedObject.FindProperty("eyeTargets");
-        CheckForNull(_eyeTargets, "_eyeTargets");
-        _poseType = serializedObject.FindProperty("poseType");
-        CheckForNull(_poseType, "_poseType");
+        _eyeTargets = GetAndCheckSeriazedProperty("eyeTargets");
+        _poseType = GetAndCheckSeriazedProperty("poseType");
 
-        _cullMaskLeft = serializedObject.FindProperty("cullMaskLeft");
-        CheckForNull(_cullMaskLeft, "_cullMaskLeft");
-        _cullMaskRight = serializedObject.FindProperty("cullMaskRight");
-        CheckForNull(_cullMaskRight, "_cullMaskRight");
+        _cullMaskLeft = GetAndCheckSeriazedProperty("cullMaskLeft");
+        _cullMaskRight = GetAndCheckSeriazedProperty("cullMaskRight");
 
-        _registerCameraObject = serializedObject.FindProperty("registerCameraObject");
-        CheckForNull(_registerCameraObject, "_registerCameraObject");
-        _gazeCastCullMask = serializedObject.FindProperty("gazeCastCullMask");
-        CheckForNull(_gazeCastCullMask, "_gazeCastCullMask");
+        _registerCameraObject = GetAndCheckSeriazedProperty("registerCameraObject");
+        _gazeCastCullMask = GetAndCheckSeriazedProperty("gazeCastCullMask");
 
-        //_compositorLayerType = serializedObject.FindProperty("layerType");
-        //CheckForNull(_compositorLayerType, "_compositorLayerType");
-        _compositorDisableTimewarp = serializedObject.FindProperty("disableTimewarp");
-        CheckForNull(_compositorDisableTimewarp, "_compositorDisableTimewarp");
-        //_compositorDisableDistortion = serializedObject.FindProperty("disableDistortion");
-        //CheckForNull(_compositorDisableDistortion, "_compositorDisableDistortion");
+        //_compositorLayerType = GetAndCheckSeriazedProperty("layerType");
+        _compositorDisableTimewarp = GetAndCheckSeriazedProperty("disableTimewarp");
+        //_compositorDisableDistortion = GetAndCheckSeriazedProperty("disableDistortion");
+
+        _dismissCameraEnabledWarning = GetAndCheckSeriazedProperty("cameraEnabledWarningDismissed");
+        _dismissCameraDisabledWarning = GetAndCheckSeriazedProperty("cameraDisabledWarningDismissed");
     }
 
     // Currently does not support editing of multiple objects at once.
@@ -85,11 +81,14 @@ public class FoveInterfaceEditor : Editor
     public sealed override void OnInspectorGUI()
     {
         // A decent style.  Light grey text inside a border.
-        helpStyle = new GUIStyle(GUI.skin.box);
+        var helpStyle = new GUIStyle(GUI.skin.box);
         helpStyle.wordWrap = true;
         helpStyle.alignment = TextAnchor.UpperLeft;
-        
         helpStyle.normal.textColor = Color.red;
+
+        var warningLabelStyle = new GUIStyle(EditorStyles.label);
+        warningLabelStyle.normal.textColor = Color.red;
+        warningLabelStyle.wordWrap = true;
 
         // Update the serializedobject
         serializedObject.Update();
@@ -160,6 +159,69 @@ public class FoveInterfaceEditor : Editor
                 "WARNING: Your target framerate is set to " + Application.targetFrameRate + ". Having a target framerate can artificially slow down FOVE frame submission. We recommend disabling this."
                 , helpStyle
                 , GUILayout.ExpandWidth(true));
+        }
+
+        var isPrefabAsset =
+#if UNITY_2018_3_OR_NEWER
+            PrefabUtility.IsPartOfPrefabAsset(target);
+#else
+            PrefabUtility.GetPrefabType(target) == PrefabType.Prefab;
+#endif
+
+        var cam = ((FoveInterface)target).GetComponent<Camera>();
+        if (cam != null && !isPrefabAsset)
+        {
+            if (FoveSettings.UseVRStereoViewOnPC)
+            {
+                if (cam.enabled && !_dismissCameraEnabledWarning.boolValue)
+                {
+                    EditorGUILayout.Space();
+                    GUILayout.BeginVertical(helpStyle);
+                    GUILayout.Label("WARNING: the camera component associated with this Fove Interface is enabled while your project is using the VR stereo view on the PC. " +
+                        "This will cause your scene to render one extra time and lower the performance of your application.\n" +
+                        "Click on 'Disable camera' to fix the issue.\n" +
+                        "If it is actually intented, you can click on the 'Dismiss warning' button to permatently hide this warning", warningLabelStyle);
+                    EditorGUILayout.Space();
+                    GUILayout.BeginHorizontal();
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Disable camera", GUILayout.Width(150)))
+                        cam.enabled = false;
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Dismiss warning", GUILayout.Width(150)))
+                        _dismissCameraEnabledWarning.boolValue = true;
+                    GUILayout.FlexibleSpace();
+                    GUILayout.EndHorizontal();
+                    EditorGUILayout.Space();
+                    GUILayout.EndVertical();
+                    EditorGUILayout.Space();
+                }
+            }
+            else
+            {
+                if (!cam.enabled && !_dismissCameraDisabledWarning.boolValue)
+                {
+                    EditorGUILayout.Space();
+                    GUILayout.BeginVertical(helpStyle);
+                    GUILayout.Label("WARNING: the camera component associated with this Fove Interface is disabled while your project is not using the VR stereo view on the PC. " +
+                        "This camera won't render to your PC view.\n" +
+                        "Click on 'Enable camera' to fix the issue.\n" +
+                        "If it is actually intented, you can click on the 'Dismiss warning' button to permatently hide this warning", warningLabelStyle);
+                    EditorGUILayout.Space();
+                    GUILayout.BeginHorizontal();
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Enable camera", GUILayout.Width(150)))
+                        cam.enabled = true;
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Dismiss warning", GUILayout.Width(150)))
+                        _dismissCameraDisabledWarning.boolValue = true;
+                    GUILayout.FlexibleSpace();
+                    GUILayout.EndHorizontal();
+                    EditorGUILayout.Space();
+                    GUILayout.EndVertical();
+                    EditorGUILayout.Space();
+
+                }
+            }
         }
 
         serializedObject.ApplyModifiedProperties();

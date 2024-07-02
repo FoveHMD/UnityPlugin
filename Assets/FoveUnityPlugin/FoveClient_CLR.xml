@@ -126,6 +126,24 @@
             </summary>
             <returns>The ID of the GPU currently attached to the headset, and the call success status</returns>
         </member>
+        <member name="M:Fove.Compositor.GetMirrorTexture(System.Int32@,System.Int32@)">
+            <summary>
+            Fetches the GPU-side mirror texture for the compositor
+            <para>
+            This texture is updated by the compositor each frame and is intended to be used for mirroring the HMD display to the PC screen.
+            It contains the left and right side in one texture, and should be called each frame.
+            </para>
+            <para>
+            You must invoke fove_Compositor_submit() once and wait a frame before this can function.
+            This is required to attach to your graphics content and setup resources.
+            You must also pass the correct
+            type for outTexture, based on the API passed to the submit function.
+            </para>
+            </summary>
+            <param name="outTexture">The mirror texture</param>
+            <param name="outWidth">The width of the mirror texture</param>
+            <param name="outHeight">The height of the mirror texture</param>
+        </member>
         <member name="M:Fove.Compositor.Dispose">
             <summary>
             Destroy native compositor
@@ -630,26 +648,6 @@
             The group of object of the scene
             </summary>
         </member>
-        <member name="T:Fove.GazeCastPolicy">
-            <summary>
-            Specify when user gaze casts should be dismissed based on his eyes openness
-            </summary>
-        </member>
-        <member name="F:Fove.GazeCastPolicy.DismissBothEyeClosed">
-            <summary>
-            Dismiss the gaze cast only if both eyes of the eye are closed.
-            </summary>
-        </member>
-        <member name="F:Fove.GazeCastPolicy.DismissOneEyeClosed">
-            <summary>
-            Dismiss the gaze cast as soon as one of the user's eye is closed.
-            </summary>
-        </member>
-        <member name="F:Fove.GazeCastPolicy.NeverDismiss">
-            <summary>
-            Never dismiss the user gaze cast. This can be useful especially for debugging.
-            </summary>
-        </member>
         <member name="T:Fove.Versions">
             <summary>
             Struct to list various version info about the FOVE software
@@ -679,6 +677,11 @@
             The version of the communication protocol the client is using
             </summary>
         </member>
+        <member name="F:Fove.Versions.clientHash">
+            <summary>
+            Null-terminated utf8 unique identifier of the client library version (usually a 40-hex git hash)
+            </summary>
+        </member>
         <member name="F:Fove.Versions.runtimeMajor">
             <summary>
             The major version number of the fove service
@@ -692,6 +695,11 @@
         <member name="F:Fove.Versions.runtimeBuild">
             <summary>
             The build version number of the fove service
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.runtimeHash">
+            <summary>
+            Null-terminated utf8 unique identifier of the fove service, or empty if unknown
             </summary>
         </member>
         <member name="F:Fove.Versions.firmware">
@@ -2394,22 +2402,11 @@
             Dispose the native headset
             </summary>
         </member>
-        <member name="P:Fove.Headset.GazeCastPolicy">
-            <summary>
-            Get or set the current gaze cast policy
-            </summary>
-        </member>
         <member name="M:Fove.Headset.IsHardwareConnected">
             <summary>
             Returns whether a HMD is connected or not
             </summary>
             <returns>Whether or not a headset is present on the machine, and the call success status</returns>
-        </member>
-        <member name="M:Fove.Headset.IsHardwareReady">
-            <summary>
-            Returns whether the hardware for the requested capabilities has started
-            </summary>
-            <returns>Whether the hardware for the requested capabilities has started, and the call success status</returns>
         </member>
         <member name="M:Fove.Headset.IsMotionReady">
             <summary>
@@ -2420,6 +2417,7 @@
         <member name="M:Fove.Headset.CheckSoftwareVersions">
             <summary>
             Checks whether the client can run against the installed version of the FOVE SDK
+            This makes a blocking call to the runtime.
             </summary>
             <returns>
             <list type="bullet">
@@ -2436,6 +2434,7 @@
             Allows you to get detailed information about the client and runtime versions.
             Instead of comparing software versions directly, you should simply call
             `CheckSoftwareVersions` to ensure that the client and runtime are compatible.
+            This makes a blocking call to the runtime.
             </para>
             </summary>
             <returns>The current software versions, and the call success status</returns>
@@ -2451,6 +2450,8 @@
             
              Usually you do not need to call this function directly.
              To check if a feature is available, simply use the feature, and see if you get a `License_FeatureAccessDenied` error.
+            
+             In case of error, an empty list is returned.
              </para>
              </summary>
              <returns>
@@ -2675,6 +2676,37 @@
             <param name="eye">Specify which eye to get the value for</param>
             <returns>
             The 2D screen position of the specified eye gaze, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+            <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.GetGazeScreenPositionCombined">
+            <summary>
+            Returns the user's 2D gaze position on a virtual screen in front of the user.
+            <para>
+            This is a 2D equivalent of `fove_Headset_getCombinedGazeRay`, and is perhaps the
+            simplest gaze estimation function.
+            </para>
+            <para>
+            It returns an X/Y coordinate of where on the screen the user is looking. While in
+            reality each eye is looking in a different direction at a different [portion of
+            the] screen, they mostly agree, and this function returns effectively an average
+            to get you a simple X/Y value.
+            </para>
+            <para>
+            The vector is normalized in the range [-1, 1] along both X and Y axes such that the
+            following points are true. Center: (0, 0), Bottom-Left: (-1, -1),Top-Right: (1, 1).
+            </para>
+            </summary>
+            <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+            <returns>
+            The 2D screen position of the combined eye gaze, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
@@ -3628,20 +3660,6 @@
             <seealso cref="M:Fove.Headset.QueryCurrentProfile"/>
             <seealso cref="M:Fove.Headset.QueryProfileDataPath(System.String)"/>
         </member>
-        <member name="M:Fove.Headset.HasAccessToFeature(System.String,System.Boolean@)">
-            <summary>
-            Returns whether the Headset has access to the given feature.
-            </summary>
-            <remarks>If the provided feature name doesn't exist, then <c>false</c> and <see cref="F:Fove.ErrorCode.None"/> are returned.</remarks>
-            <param name="featureName">The name of the headset feature to query</param>
-            <param name="hasAccess"><c>True</c> if the headset can access the given feature, <c>false</c> otherwise</param>
-            <returns>
-            <list type="bullet">
-            <item><see cref="F:Fove.ErrorCode.None"/>if the call succeeded</item>
-            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if featureName is null</item>
-            </list>
-            </returns>
-        </member>
         <member name="M:Fove.Headset.RenameProfile(System.String,System.String)">
             <summary>
             Renames an existing profile. This works on the current profile as well.
@@ -3782,6 +3800,44 @@
             <seealso cref="M:Fove.Headset.ListProfiles"/>
             <seealso cref="M:Fove.Headset.SetCurrentProfile(System.String)"/>
             <seealso cref="M:Fove.Headset.QueryCurrentProfile"/>
+        </member>
+        <member name="M:Fove.Headset.HasAccessToFeature(System.String)">
+            <summary>
+            Returns whether the Headset has access to the given feature.
+            </summary>
+            <remarks>If the provided feature name doesn't exist, then <c>false</c> and <see cref="F:Fove.ErrorCode.None"/> are returned.</remarks>
+            <param name="featureName">The name of the headset feature to query</param>
+            <returns>
+            <list type="bullet">
+            <item><c>True</c> if the headset can access the given feature, otherwise <c>false</c></item>
+            <item><see cref="F:Fove.ErrorCode.None"/>if the call succeeded</item>
+            <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if featureName is null</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.ActivateLicense(System.String)">
+            <summary>
+            Returns whether the license is activated successfully.
+            </summary>
+            <param name="licenseKey">The license key used for activation</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>if the activation succeeded</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if the activation failed</item>
+            </list>
+            </returns>
+        </member>
+        <member name="M:Fove.Headset.DeactivateLicense(System.String)">
+            <summary>
+            Returns whether the license is deactivated successfully.
+            </summary>
+            <param name="licenseData">The license information used for deactivation, can be empty or a guid or a license key</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/>if the deactivation succeeded</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if the deactivation failed</item>
+            </list>
+            </returns>
         </member>
         <member name="M:Fove.Headset.CreateCompositor">
             <summary>

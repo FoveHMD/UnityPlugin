@@ -19,7 +19,6 @@ namespace Fove.Unity
         // static awaiters
         private static WaitUntil m_sWaitForHardwareConnected = new WaitUntil(() => IsHardwareConnected());
         private static WaitUntil m_sWaitForHardwareDisconnected = new WaitUntil(() => !IsHardwareConnected());
-        private static WaitUntil m_sWaitForHardwareReady = new WaitUntil(() => IsHardwareReady());
         private static WaitUntil m_sWaitForCalibrationStart = new WaitUntil(() => IsEyeTrackingCalibrating());
         private static WaitUntil m_sWaitForCalibrationEnd = new WaitUntil(() => !IsEyeTrackingCalibrating());
         private static WaitUntil m_sWaitForCalibrationCalibrated = new WaitUntil(() => IsEyeTrackingCalibrated());
@@ -27,7 +26,7 @@ namespace Fove.Unity
 
         // The headset instance
         private Headset headset;
-    
+
         // Caches
         private Pose hmdPose = Pose.Null;
         private Quaternion headRotation = Quaternion.identity;
@@ -37,7 +36,6 @@ namespace Fove.Unity
         // Previous frame values cached to identify state changes
         private Stereo<EyeState> previousEyeStates = new Stereo<EyeState>(EyeState.NotDetected);
         private bool wasHardwareConnected = false;
-        private bool wasHardwareReady = false;
         private bool wasCalibrating = false;
         private bool wasShiftingAttention = false;
         private bool wasUserPresent = false;
@@ -46,7 +44,7 @@ namespace Fove.Unity
         // Settings cache for runtime
         private float worldScale = 1.0f;
         private float renderScale = 1.0f;
-    
+
         // Rendering/submission native pointers
         private IntPtr submitNativeFunc;
         private IntPtr wfrpNativeFunc;
@@ -86,7 +84,7 @@ namespace Fove.Unity
         /// </summary>
         internal static FoveManager Instance
         {
-            get 
+            get
             {
                 if (sInstance == null)
                 {
@@ -105,8 +103,8 @@ namespace Fove.Unity
         private enum LogLevel
         {
             Error,   // Lowest level, this should contain only errors
-            Warning, // Warnings should be logged here               
-            Debug,   // Generic debugging info can go here          
+            Warning, // Warnings should be logged here
+            Debug,   // Generic debugging info can go here
         };
 
         [MonoPInvokeCallback(typeof(LogSinkDelegate))]
@@ -153,7 +151,7 @@ namespace Fove.Unity
         private EyeTextures GetEyeTextures(int layerId)
         {
             EyeTextures result;
-        
+
             Vec2i dims = new Vec2i(1, 1);
             UnityFuncs.GetIdealLayerDimensions(layerId, ref dims);
 
@@ -184,7 +182,7 @@ namespace Fove.Unity
         private static Dictionary<int, List<InterfaceInfo>> m_sInterfaceStacks = new Dictionary<int, List<InterfaceInfo>>();
 
         private static List<InterfaceInfo> m_sUnregisteredInterfaces = new List<InterfaceInfo>();
-        
+
         /*******************************************************************************\
          * MonoBehaviour / instance methods                                            *
         \*******************************************************************************/
@@ -207,9 +205,8 @@ namespace Fove.Unity
         {
             worldScale = FoveSettings.WorldScale;
             renderScale = FoveSettings.RenderScale;
-
-            headset.GazeCastPolicy = FoveSettings.GazeCastPolicy;
-
+            EnsureCalibration = FoveSettings.EnsureCalibration;
+            UseVRStereoViewOnPC = FoveSettings.UseVRStereoViewOnPC;
             UnityFuncs.ResetNativeState();
             screenBlitMaterial = new Material(Shader.Find("Fove/EyeShader"));
 
@@ -295,13 +292,15 @@ namespace Fove.Unity
                         capabilities |= ClientCapabilities.OrientationTracking;
                     if (xface.fetchPosition)
                         capabilities |= ClientCapabilities.PositionTracking;
+
+                    // the orientation capability is needed when submitting frames for proper time-warping
+                    if (!xface.TimewarpDisabled)
+                        capabilities |= ClientCapabilities.OrientationTracking;
                 }
                 return capabilities;
             };
 
-            // always enable the orientation capability as it is needed when submitting frames for proper time-warping
-            var aggregatedCaps = ClientCapabilities.OrientationTracking;
-
+            var aggregatedCaps = ClientCapabilities.None;
             foreach (var interfaceList in m_sInterfaceStacks.Values)
                 foreach (var interfaceInfo in interfaceList)
                     aggregatedCaps |= getCapabilities(interfaceInfo.xface);
@@ -346,7 +345,7 @@ namespace Fove.Unity
                         Debug.Log("No runtime service found. Please start the fove runtime service.");
                     return false;
                 default:
-                    Debug.LogError("An unknown error was returned by Fove CheckSoftwareVersions: " + err);
+                    Debug.LogError("An unknown error was returned by Fove CheckSoftwareVersions: " + err.error);
                     return true;
             }
         }
@@ -369,7 +368,7 @@ namespace Fove.Unity
 
         private IEnumerator FoveUpdateCoroutine()
         {
-            if (FoveSettings.ShouldForceCalibration)
+            if (EnsureCalibration)
                 StartEyeTrackingCalibration(new CalibrationOptions { lazy = true });
 
             var endOfFrameWait = new WaitForEndOfFrame();
@@ -379,7 +378,7 @@ namespace Fove.Unity
                 // update the headset capabilities if changed
                 UpdateCapabilities();
 
-                if (!UpdateHmdDataInternal()) // hmd got disconnected
+                if (!UpdateHmdDataInternal()) // HMD got disconnected, exist and wait for new connection
                     break;
 
                 // Don't do any rendering code (below) if the compositor isn't ready
@@ -447,7 +446,7 @@ namespace Fove.Unity
 
                     isBackendInitialized = true; // Submit implicitly initializes the backend
 
-                    if (!FoveSettings.CustomDesktopView)
+                    if (UseVRStereoViewOnPC)
                     {
                         // this code works only because we only have one single layer (base) allowed for the moment
                         // TODO: Adapt this code as soon as we allow several layers
@@ -502,12 +501,12 @@ namespace Fove.Unity
         {
             var isHmdConnectedChanged = false;
 
-            // First chech and update the HMD connection status
+            // First check and update the HMD connection status
             // If the HMD happens to be disconnected we trigger the associated event and abort the update process
             // If the HMD status changed to connected, we delay the trigger of the associated event after the update of other data
             {
                 var isHmdConnected = Headset.IsHardwareConnected();
-                if (isHmdConnected.error == ErrorCode.Hardware_Disconnected) // this returns an error whereas it is was we are querying, so we just ignore it...
+                if (isHmdConnected.error == ErrorCode.Hardware_Disconnected) // this returns an error whereas it is what we are querying, so we just ignore it...
                     isHmdConnected.error = ErrorCode.None;
 
                 if (isHmdConnected != wasHardwareConnected)
@@ -527,14 +526,10 @@ namespace Fove.Unity
             }
 
             // Fetch the new eye tracking data from the service
-            var fetchResult = Headset.FetchEyeTrackingData();
-            if (fetchResult.error == ErrorCode.Data_NoUpdate)
-                return false;
+            Headset.FetchEyeTrackingData();
 
             // Fetch the new pose data from the service
-            fetchResult = Headset.FetchPoseData();
-            if (fetchResult.error == ErrorCode.Data_NoUpdate)
-                return false;
+            Headset.FetchPoseData();
 
             // Update images (if caps not registered, early error exit is triggered)
             Headset.FetchEyesImage();
@@ -574,15 +569,6 @@ namespace Fove.Unity
                     throw new Exception("Internal error: Unexpected hmd connection status");
 
                 var handler = HardwareConnected;
-                if (handler != null)
-                    handler.Invoke();
-            }
-
-            var hwdReady = IsHardwareReady();
-            if (hwdReady.IsValid && wasHardwareReady != hwdReady)
-            {
-                wasHardwareReady = hwdReady;
-                var handler = hwdReady ? HardwareIsReady : null;
                 if (handler != null)
                     handler.Invoke();
             }
@@ -660,7 +646,7 @@ namespace Fove.Unity
 
         private static bool CompositorReadyCheck()
         {
-            var isCompositorReady = false; 
+            var isCompositorReady = false;
             UnityFuncs.IsCompositorReady(ref isCompositorReady);
             return isCompositorReady;
         }
@@ -728,7 +714,7 @@ namespace Fove.Unity
             int texWidth, texHeight;
             GetMirrorTexturePtr(out texPtr, out texWidth, out texHeight);
             if (texPtr != IntPtr.Zero // the mirror texture doesn't exist yet
-                && (mirrorTexture.value == null || texPtr != mirrorTexPtr || texWidth != mirrorTexWidth || texHeight != mirrorTexHeight)) 
+                && (mirrorTexture.value == null || texPtr != mirrorTexPtr || texWidth != mirrorTexWidth || texHeight != mirrorTexHeight))
             {
                 mirrorTexPtr = texPtr;
                 mirrorTexWidth = texWidth;

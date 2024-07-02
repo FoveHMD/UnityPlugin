@@ -18,7 +18,10 @@ namespace Fove.Unity
         [Serializable]
         public enum PlayerPose
         {
-            Sitting,
+            // The origin of the HMD position is the user neck
+            Standard,
+
+            // The origin of the HMD position is the floor
             Standing,
         }
 
@@ -278,7 +281,7 @@ namespace Fove.Unity
         /// To get individual eye rays use <see cref="GetGazeRay(Eye)"/> instead
         /// </para>
         /// <para>
-        /// To get the user gaze in the headse coordinate space use the <see cref="FoveManager.GetCombinedGazeRay()"/> instead. 
+        /// To get the user gaze in the headset coordinate space use the <see cref="FoveManager.GetHmdCombinedGazeRay()"/> instead.
         /// </para>
         /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
         /// <returns>

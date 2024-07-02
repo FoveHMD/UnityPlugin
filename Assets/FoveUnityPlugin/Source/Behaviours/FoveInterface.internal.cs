@@ -6,6 +6,10 @@ namespace Fove.Unity
     [RequireComponent(typeof(Camera))]
     public partial class FoveInterface : MonoBehaviour
     {
+        // Editor warning display dismiss states
+        [SerializeField] private bool cameraEnabledWarningDismissed;
+        [SerializeField] private bool cameraDisabledWarningDismissed;
+
         // Compositor options
         [Tooltip("Check this to disable time warp on images rendered and sent to the compositor. This is useful if you disable orientation to avoid any jitter due to frame latency.")]
         [SerializeField] protected bool disableTimewarp = false;
@@ -148,8 +152,6 @@ namespace Fove.Unity
                 transform.localRotation = Quaternion.identity;
             }
             cam = GetComponent<Camera>();
-            if (!FoveSettings.CustomDesktopView && !FoveSettings.IsUsingOpenVR)
-                cam.enabled = false;
         }
 
         private void RecreateLayer()
@@ -216,24 +218,7 @@ namespace Fove.Unity
 
         virtual protected bool CanSee()
         {
-            if (!eyeConvergeRay.IsValid)
-                return false;
-
-            var left = FoveManager.GetEyeState(Eye.Left);
-            var right = FoveManager.GetEyeState(Eye.Right);
-
-            var gazeCastPolicy = FoveManager.GazeCastPolicy;
-            switch (gazeCastPolicy)
-            {
-                case GazeCastPolicy.DismissBothEyeClosed:
-                    return (left.IsValid && left.value == EyeState.Opened) || (right.IsValid && right.value == EyeState.Opened);
-                case GazeCastPolicy.DismissOneEyeClosed:
-                    return left.IsValid && right.IsValid && left.value == EyeState.Opened && right.value == EyeState.Opened;
-                case GazeCastPolicy.NeverDismiss:
-                    return true;
-            }
-
-            throw new NotImplementedException("Unknown gaze cast policy '" + gazeCastPolicy + "'");
+            return eyeConvergeRay.IsValid;
         }
 
         /****************************************************************************************************\

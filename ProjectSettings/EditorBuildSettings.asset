@@ -7,59 +7,94 @@ EditorBuildSettings:
   m_Scenes:
   - enabled: 1
     path: Assets/Tests/Calibration/CalibrationTest.unity
+    guid: 39e795463fe61d541a18905b40e479e3
   - enabled: 1
     path: Assets/Tests/Capabilities/CapabilitiesScene.unity
+    guid: 8201f6b28e3b37c48a9fbd121ff9f460
   - enabled: 1
     path: Assets/Tests/CompositorOptions/CompositorOptionTests.unity
+    guid: c83bdd7fd2eb51242afbb40a675219e2
   - enabled: 1
     path: Assets/Tests/EyeShapes/EyeShapesTest.unity
+    guid: 88807f62ad7f8a2419036f95fed42393
   - enabled: 1
     path: Assets/Tests/GazeObjectDetection/1_FixedObjects.unity
+    guid: a151c08a21200b742ab65a808fa62b35
   - enabled: 1
     path: Assets/Tests/GazeObjectDetection/10_CameraMovement.unity
+    guid: c512982280ed43a45a49eced98de0524
   - enabled: 1
     path: Assets/Tests/GazeObjectDetection/11_RigitBody.unity
+    guid: b82bb9d100e64474c9ba343201442b04
   - enabled: 1
     path: Assets/Tests/GazeObjectDetection/2_AnimatedObjects.unity
+    guid: eae8cd881ec55b5489d23b63c9c23ff1
   - enabled: 1
     path: Assets/Tests/GazeObjectDetection/3_MultiCollider.unity
+    guid: b6ecbf573da6f084dbcc9ef86fb583bd
   - enabled: 1
     path: Assets/Tests/GazeObjectDetection/4_PrefabInstantiation.unity
+    guid: 3e804c08db2388f4ebc8ad9a4f680ecc
   - enabled: 1
     path: Assets/Tests/GazeObjectDetection/5_DepthTests.unity
+    guid: 530fed3812e134e40930234e824f2e6d
   - enabled: 1
     path: Assets/Tests/GazeObjectDetection/6_MultiCamera&Mask.unity
+    guid: 05bcdb4821111074a9cc294572a4b794
   - enabled: 1
     path: Assets/Tests/GazeObjectDetection/7_PerformanceTests.unity
+    guid: 368a660b1c5845b409127293097dd82e
   - enabled: 1
     path: Assets/Tests/GazeObjectDetection/8a_MultiScenes (start).unity
+    guid: ab365cb808a457f418775e017e577a0e
   - enabled: 1
     path: Assets/Tests/GazeObjectDetection/8b_MultiScenes.unity
+    guid: 2d972e26b9b6e794db6467a1469ef732
   - enabled: 1
     path: Assets/Tests/GazeObjectDetection/8c_MultiScenes.unity
+    guid: bf7f6dd6fe81fbc4386eb88516d64b18
   - enabled: 1
     path: Assets/Tests/GazeObjectDetection/9_AmbiguityResolving.unity
+    guid: 06719de6441bb0c47b4c27e0da472ff9
   - enabled: 1
     path: Assets/Tests/GazeRecording/RecordingScene.unity
+    guid: d9a400591851a174eba046777e4e8589
   - enabled: 1
     path: Assets/Tests/main.unity
+    guid: 11783277c959a6440bf2b9f094d6657b
   - enabled: 1
     path: Assets/Tests/PostEffects/PostEffectTestScene.unity
+    guid: 7b2833a7aed050441b5e3c775b01288c
   - enabled: 1
     path: Assets/Tests/SceneTransitions/0 - LoadSync (test start).unity
+    guid: c9a614a54d422974e90005e73e122cb8
   - enabled: 1
-    path: Assets/Tests/SceneTransitions/1 - LoadAsync.unity
+    path: Assets/Tests/SceneTransitions/1 - Load NoFove Sync.unity
+    guid: b487c4bd2574fff488f0b66bb03e310e
   - enabled: 1
-    path: Assets/Tests/SceneTransitions/2 - LoadGlobalPrefabCamera.unity
+    path: Assets/Tests/SceneTransitions/2 - LoadSync.unity
+    guid: 62a6b2156f8f3494f871423f2daed34f
   - enabled: 1
-    path: Assets/Tests/SceneTransitions/3 - LoadAsyncAdditive.unity
+    path: Assets/Tests/SceneTransitions/3 - LoadAsync.unity
+    guid: ade3ba14290a388439a466b56ace678d
   - enabled: 1
-    path: Assets/Tests/SceneTransitions/4 - ExtraFoveInterface.unity
+    path: Assets/Tests/SceneTransitions/4 - LoadGlobalPrefabCamera.unity
+    guid: ad00de01835f8c641b960a0f392a767b
+  - enabled: 1
+    path: Assets/Tests/SceneTransitions/5 - LoadAsyncAdditive.unity
+    guid: e8357d41a673d6d469a8dfdd70c39df1
+  - enabled: 1
+    path: Assets/Tests/SceneTransitions/6 - ExtraFoveInterface.unity
+    guid: 0ba7e4956a8a6da4b96b62a999dba90a
   - enabled: 1
     path: Assets/Tests/StereoProjection/StereoProjection.unity
+    guid: 9417af90b69fce14fbda52bc6c73dc57
   - enabled: 1
     path: Assets/Tests/UI/UITests.unity
+    guid: ffb85a716a2f2a541a3e5f804ba8e842
   - enabled: 1
     path: Assets/Tests/Calibration/HmdAdjustmentTest.unity
+    guid: 252b4d0759d2a2449908eb69961092fc
   - enabled: 1
     path: Assets/Tests/Textures/FoveTextures.unity
+    guid: 59bb8e1e5237f084fb214a32f96fc809

@@ -84,19 +84,20 @@ public class CalibrationTest : MonoBehaviour
 
         var calibStateDetails = FoveManager.GetEyeTrackingCalibrationStateDetails();
 
-        isCalibratedText.text = "IsCalibrated: " + FoveManager.IsEyeTrackingCalibrated().value;
-        isCalibratingText.text = "IsCalibrating: " + FoveManager.IsEyeTrackingCalibrating().value;
-        stateText.text = "Calibration State: " + FoveManager.GetEyeTrackingCalibrationState().value;
-        lazyText.text = "Lazy Calibration: " + calibOptions.lazy;
-        restartText.text = "Restart Calibration: " + calibOptions.restart;
-        eyeByEyeText.text = "Eye-by-eye Calibration: " + calibOptions.eyeByEye;
-        eyeTorsionText.text = "Eye Torsion Calibration: " + calibOptions.eyeTorsion;
-        methodText.text = "Calibration Method: " + calibOptions.method;
-        renderModeText.text = "Custom Calibration Rendering: " + calibRenderer.enabled;
-        customHmdAdjustment.text = "Custom Hmd adjustment GUI: " + hmdAdjustRenderer.gameObject.activeInHierarchy;
-        calibStateInfo.text = "State Info: " + calibStateDetails.value.stateInfo;
-        runningMethod.text = "Running Method: " + calibStateDetails.value.method;
-        calibPoints.text = "Calib Points:"
+        lazyText.text = "- Lazy Calibration: " + calibOptions.lazy;
+        restartText.text = "- Restart Calibration: " + calibOptions.restart;
+        eyeByEyeText.text = "- Eye-by-eye Calibration: " + calibOptions.eyeByEye;
+        eyeTorsionText.text = "- Eye Torsion Calibration: " + calibOptions.eyeTorsion;
+        methodText.text = "- Calibration Method: " + calibOptions.method;
+        renderModeText.text = "- Skinned CalibrationRendering: " + calibRenderer.enabled;
+        customHmdAdjustment.text = "- Skinned Hmd adjustment: " + hmdAdjustRenderer.gameObject.activeInHierarchy;
+
+        isCalibratedText.text = "- IsCalibrated: " + FoveManager.IsEyeTrackingCalibrated().value;
+        isCalibratingText.text = "- IsCalibrating: " + FoveManager.IsEyeTrackingCalibrating().value;
+        runningMethod.text = "- Running Method: " + calibStateDetails.value.method;
+        stateText.text = "- Calibration State: " + FoveManager.GetEyeTrackingCalibrationState().value;
+        calibStateInfo.text = "- State Info: " + calibStateDetails.value.stateInfo;
+        calibPoints.text = "- Calib Points:"
             + "\n\t- L: " + Format(calibStateDetails.value.targets.left)
             + "\n\t- R: " + Format(calibStateDetails.value.targets.right);
     }

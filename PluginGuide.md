@@ -44,7 +44,7 @@ The Unity package adds a folder called _FoveUnityPlugin_ to your project. Within
 ### The FOVE Interface component
 
 This is the most important component of the plugin:
-- It renders each eye and sends the images data to the headset, and, for this reason should always come along with a Unity camera. 
+- It renders each eye and sends the images data to the headset, and, for this reason should always come along with a Unity camera.
 - It updates the camera local transformation to match the Fove headset pose (orientation and position)
 - It converts raw gaze information into world space gaze data and provide convenience ray cast methods.
 
@@ -66,14 +66,14 @@ When set to `Left` or `Right` the attached camera renders only to the correspond
 
 #### Pose Type
 
-Starting with version 0.15.0 of the Fove SDK, we have added two different pose settings: sitting and standing. 
+Starting with version 0.15.0 of the Fove SDK, we have added two different pose settings: sitting and standing.
 
 Sitting is the same as in previous versions, and will tend to keep the user's view close to where the camera starts out.
 
 Standing is the new mode, and it takes into account an offset of the position-tracking camera from the floor. In theory, using the standing mode, if the user has this value configured well, they should end up in similar places when using either Fove or SteamVR.
 
 Assuming the setting has been configured properly, "Standing" mode offers a more accurate transfer of the user's view into VR to what their brains expect to see in terms of position off the floor and movement. However for simulations where the user is... well, sitting, we recommend using the "Sitting" mode which will allow you to position them more precisely in the world.
- 
+
 #### Gaze Object Detection
 
 Properties related gaze-based scene object detection.
@@ -101,7 +101,7 @@ A little background: In an ideal, real-time, deterministic operating system, one
 
 But if you are rendering an overlay that's attached to the camera, time warp during those little skips can actually make your supposedly-steady HUD appear to jump around rather a lot! For these instances, we have the *Disable Timewarp* toggle. If you're making a layer that's intended to stay in one place relative to the user's vision, definitely turn this on.
 
-##### Disable Distortion 
+##### Disable Distortion
 
 This feature is not supported anymore and has been hidden from the GUI.
 
@@ -126,7 +126,7 @@ The "Settings" tab (near the top of the window) shows any global settings. The f
 
 ### The Fove Manager class
 
-This is a singleton class automatically created when starting your game. The singleton instance doesn't normally need to be accessed directly though. All usefully properly and function are static and can be accessed from `FoveManager` class directly. 
+This is a singleton class automatically created when starting your game. The singleton instance doesn't normally need to be accessed directly though. All usefully properly and function are static and can be accessed from `FoveManager` class directly.
 
 It allows you to modify the Fove settings at runtime, to retrieve any gaze information that is independent from cameras and control the eye & position tracking.
 For example ,from the `FoveManager`, you can:
@@ -192,7 +192,6 @@ If you don't want to manually create and attach the `GazableObject` component to
 
 If you don't want to use the Gaze Object Detection feature and prefer to perform collider gaze ray casting manually, it is also possible.
 There are a number of convenience methods built out for you which determine if the user is looking at a given collider, or a collection of colliders. These methods are designed to be similar to many of the `Raycast` methods provided by Unity, just based on the user's gaze. As such, they're called `Gazecast`. You can find them on the `FoveInterface` class, check them out. They're pretty efficient and easy to use.
-The `GazeCastPolicy` property of the Fove settings allows you to choose to ignore or not gaze cast collisions when the user is closing one or two eyes.
 
 If you want to have even more control on what you are doing, you can also grab the combined gaze ray from the method `GetCombinedGazeRay()` of your `FoveInterface` instance and perform ray-casting/gazed object detection by yourself.
 
@@ -282,7 +281,7 @@ From version 3.1.2, it is possible to use OpenVR to render your game from the Un
 
 To do so, proceed as following:
 1. Install SteamVr and Fove SteamVR plugin
-2. Disable the auto-start of the Fove compositor from the fove tray 
+2. Disable the auto-start of the Fove compositor from the fove tray
 3. Enable VR support in the Unity player settings of your project. Add the `OpenVR` sdk in the list of supported VR sdks.
 4. Add a `Fove Interface` prefab to your game (if not already done)
 5. Start your game normally
@@ -315,8 +314,8 @@ Use can use the Unity object layer system and `FoveInterface`'s per eye culling 
 
 ### Display a different view on the PC display
 
-By default the Fove plug-in optimizes the rendering and copies the headset view as-is onto the desktop display. If you want to display a different view (such a config menu, etc.) on your PC monitor, you can disable this optimization from the Fove settings. Open the Resources/FOVE Settings file in Unity editor and check the `Custom Desktop View` option. After enabling this option, every enabled cameras will render to your desktop view while only the cameras (enabled or not) with a `FoveInterface` component will render to the headset. So: 
-- To render objects only on the headset, disable the camera component rendering these objects. 
+By default the Fove plug-in optimizes the rendering and copies the headset view as-is onto the desktop display. If you want to display a different view (such a config menu, etc.) on your PC monitor, you can disable this optimization from the Fove settings. Open the Resources/FOVE Settings file in Unity editor and check the `Custom Desktop View` option. After enabling this option, every enabled cameras will render to your desktop view while only the cameras (enabled or not) with a `FoveInterface` component will render to the headset. So:
+- To render objects only on the headset, disable the camera component rendering these objects.
 - To render objects only on the Desktop display, add the object layers to the `Per-Eye Culling Masks` of the `FoveInterface` or disable/remove the `FoveInterface` component of the camera.
 - To display some objects on both and some only on one, split your objects into several layers and adjust the `FoveInterface` and camera Culling Masks accordingly.
 
@@ -366,7 +365,7 @@ There are some limitations with the current system which we may be fixing in the
 * Camera orthogonal projections are currently not supported. Perspective projection is always used at runtime to match headset view parameters. Keep this in mind when you build your game UI.
 * Using "skybox" camera clear mode and set the scene skybox to null (scene lighting settings) may result in a white screen inside the headset.
 * Unity Editor update overhead seems to have increased in recent versions of Unity (2017+). This sometimes result in missed frames and can cause the scenes to stutter when you are playing the scene in-editor. However, these display issues should vanish when you build and launch the real project player.
-* Gaze vector can be null (0,0,0) if the calibration has been not properly run.
 * SteamVR maintains its own HMD offset values which get applied to the camera in your scene. These are almost certainly different from the position as reported by FOVE. If you want your project to be compatible with both, you can achieve this by using "Standing" mode in the `FoveInterface` inspector.
 * In addition, because SteamVR/OpenVR handle the position of the interface object on their own, the world scale values won't work when running in SteamVR mode. We recommend keeping your world scale at 1 for highest compatibility with other VR systems.
 * Unity post process stack is not supported as it internally modifies the camera projection matrix.
+* A scene cannot contain two or more FOVE interfaces with different "time warping" settings. All the FOVE interfaces of a scene should either have time warp enable or disable.

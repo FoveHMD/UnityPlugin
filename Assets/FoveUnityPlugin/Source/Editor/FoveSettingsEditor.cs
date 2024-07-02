@@ -11,9 +11,9 @@ namespace Fove.Unity
         public override void OnInspectorGUI()
         {
             EditorGUILayout.LabelField("Please edit this object type using the FOVE Settings window.");
-            if (GUILayout.Button("FOVE Settings"))
+            if (GUILayout.Button("Open FOVE settings"))
             {
-                FoveSettingsWindow.EditSettings();
+                FoveSettingsWindow.OpenSettingsWindow(false);
             }
         }
     }
@@ -22,14 +22,10 @@ namespace Fove.Unity
     public class FoveSettingsWindow : EditorWindow
     {
         private static readonly string[] Tabs = { "Fixes", "Settings" };
-        
-        private static GUIStyle m_WordWrapLabel;
-        
-        private static List<SuggestedProjectFix> m_FixList;
 
-        static FoveSettingsWindow()
-        {
-            m_FixList = new List<SuggestedProjectFix>(new SuggestedProjectFix[] {
+        private static GUIStyle m_WordWrapLabel;
+
+        private static List<SuggestedProjectFix> m_FixList = new List<SuggestedProjectFix> { 
                 new RequireWin64Bit_Suggestion(),
                 new VsyncOff_Suggestion(),
                 new RunInBackground_Suggestion(),
@@ -37,9 +33,12 @@ namespace Fove.Unity
                 new ForwardRendering_Suggestion(),
                 new Msaa4x_Suggestion(),
                 new HideResolutionDialog_Suggestion(),
-                new DisableResize_Suggestion()
-            });
+                new DisableResize_Suggestion(),
+                new DisableFoveInterfaceCameras()
+            };
 
+        static FoveSettingsWindow()
+        {
             // Unity won't deserialize assets properly until the normal update loop,
             // so we register for the delegate, which will unregister itself when it's called.
             EditorApplication.update += RunOnce;
@@ -59,6 +58,9 @@ namespace Fove.Unity
 
         static void RunOnce()
         {
+            if (EditorApplication.isPlaying)
+                return;
+
             // Only run this once from the delegate
             EditorApplication.update -= RunOnce;
 
@@ -66,9 +68,9 @@ namespace Fove.Unity
             // In order to show settings:
             // * showAutomatically must be true OR no settings file exists
             // * at least one suggestion must be applicable
-            if ((FoveSettings.ShouldShowAutomatically) && NeedsAnySuggestions())
+            if (FoveSettings.ShouldShowAutomatically && NeedsAnySuggestions())
             {
-                EditSettings();
+                OpenSettingsWindow(true);
             }
         }
 
@@ -87,12 +89,24 @@ namespace Fove.Unity
         }
 
         [MenuItem("FOVE/Edit Settings")]
-        public static void EditSettings()
+        public static void OpenSettings()
+        {
+            OpenSettingsWindow(false);
+        }
+
+        [MenuItem("FOVE/Config fixes")]
+        public static void OpenConfigFixes()
+        {
+            OpenSettingsWindow(true);
+        }
+
+        public static void OpenSettingsWindow(bool displayFixes)
         {
             FoveSettingsWindow window = GetWindow<FoveSettingsWindow>();
 
             GUIContent title = new GUIContent("FOVE Settings");
             window.titleContent = title;
+            window.m_selectedTab = displayFixes ? 0 : 1;
 
             window.Show();
         }
@@ -152,7 +166,7 @@ namespace Fove.Unity
         //    }
         //}
 
-        private void DrawFixSuggestions()
+        private void DrawFixSuggestions(SerializedObject serialized)
         {
             bool hasSuggestions = false;
             bool needsCheck = false;
@@ -171,7 +185,7 @@ namespace Fove.Unity
             }
             m_forceCheck = needsCheck;
 
-            // Need something here to make sure the view 
+            // Need something here to make sure the view
             if (!hasSuggestions)
             {
                 GUILayout.FlexibleSpace();
@@ -187,12 +201,22 @@ namespace Fove.Unity
             // "Fix All" button row
             EditorGUILayout.BeginHorizontal();
             {
-                if (GUILayout.Button("Refesh"))
+                if (GUILayout.Button("Refresh Suggestions"))
                     m_forceCheck = true;
+
+                if (MouseInLastElement())
+                    SetHelpMessage("Refresh the list of fixes and optimization suggestions for the current FOVE project");
+
                 GUILayout.FlexibleSpace();
+                
+                serialized.FindProperty("showAutomatically").boolValue = GUILayout.Toggle(FoveSettings.ShouldShowAutomatically, " Always Show Suggestions", GUILayout.ExpandWidth(false));
+                if (MouseInLastElement())
+                    SetHelpMessage("Whether or not to check for available optimizations every time the plugin is reloaded (typically just on the initial project load).");
 
                 if (hasSuggestions)
                 {
+                    GUILayout.FlexibleSpace();
+
                     if (GUILayout.Button("Fix All"))
                     {
                         foreach (var fix in m_FixList)
@@ -235,14 +259,11 @@ namespace Fove.Unity
                 "Automatically register cameras and objects with collider into the objects registry. This allows you to query the currently gazed object from the Fove manager without any additional setup. Disabling this feature if you want to manually register gazable objects or if you don't need the feature.",
                 () => { serialized.FindProperty("automaticObjectRegistration").boolValue = EditorGUILayout.Toggle("Automatic Gaze Object Registration", FoveSettings.AutomaticObjectRegistration, GUILayout.ExpandWidth(false)); });
             DrawElementRow(
-                "Force eye tracking to recalibrate every time the game is launched (including pressing the \"Play\" button in the editor.\n\nRecommended: Leave this off except for builds where users will be changing frequently, e.g., public demos/exhibitions.",
-                () => { serialized.FindProperty("forceCalibration").boolValue = EditorGUILayout.Toggle("Force Calibration", FoveSettings.ShouldForceCalibration, GUILayout.ExpandWidth(false)); });
+                "Ensure that the eye tracking system is always calibrated while the application is running. If not the calibration is started automatically by the plugin.",
+                () => { serialized.FindProperty("ensureCalibration").boolValue = EditorGUILayout.Toggle("Ensure Calibration", FoveSettings.EnsureCalibration, GUILayout.ExpandWidth(false)); });
             DrawElementRow(
-                "Allow to have the destkop main display view to be different from the HMD. When enabled, any enabled camera renders to the desktop view while any enabled Fove Interface renderers to the HMD. Having a different view for desktop display requires to perform extra rendering and is slower.",
-                () => { serialized.FindProperty("customDesktopView").boolValue = EditorGUILayout.Toggle("Custom Desktop View", FoveSettings.CustomDesktopView, GUILayout.ExpandWidth(true)); });
-            DrawElementRow(
-                "Specify how gaze cast collision should be dismissed based on the user closed eye state. ",
-                () => { serialized.FindProperty("gazeCastPolicy").enumValueIndex = (int)(GazeCastPolicy)EditorGUILayout.EnumPopup("Gaze Cast Policy", FoveSettings.GazeCastPolicy, GUILayout.MinWidth(400)); }); 
+                "When enabled, the VR stereo view is automatically copied to the PC monitor. This eliminates the need for rendering the scenes an additional time for the PC view. As a result, you can optimize your game by disabling all cameras that render to the main render target. This can be done either manually or automatically using the corresponding optimization fix provided in the Fove settings `fixes` tab.\n\nYou shouldn't enable this option if you are planning to render a different view, like a UI monitoring screen or a third party observer view, on your PC screen. In this case, you should check that all the cameras you need to render your PC view are acutally properly enabled.\n\nNote: this settings can be changed at runtime through the FoveManager. In this case you need to accordingly enabled / disabled the cameras of your scenes.",
+                () => { serialized.FindProperty("customDesktopView").boolValue = !EditorGUILayout.Toggle("Use VR stereo view on PC", FoveSettings.UseVRStereoViewOnPC, GUILayout.ExpandWidth(true)); });
             DrawElementRow(
                 "The multiplier for how many engine-world units are in one meter. Unity assumes 1 unit = 1 meter, so you will likely want to keep this the same. If you treat 10 units as a meter, you would set this to 10. If each world unit is 10 meters, you would set this to 0.1, and so forth.",
                 () => { serialized.FindProperty("worldScale").floatValue = EditorGUILayout.FloatField("World Scale", FoveSettings.WorldScale, GUILayout.ExpandWidth(false)); });
@@ -271,7 +292,7 @@ namespace Fove.Unity
                 m_HelpMessageWasSet = false;
 
             var serialized = FoveSettings.GetSerializedObject();
-            
+
             EditorGUILayout.BeginHorizontal();
             {
                 GUILayout.FlexibleSpace();
@@ -281,8 +302,6 @@ namespace Fove.Unity
                     SetHelpMessage("Select whether you want to view project settings suggestions (with options to automatically apply them) or project-level settings for the FOVE headset.");
 
                 GUILayout.FlexibleSpace();
-
-                serialized.FindProperty("showHelp").boolValue = GUILayout.Toggle(FoveSettings.ShouldShowHelp, "Show Help", GUILayout.ExpandWidth(false));
                 EditorGUILayout.Space();
             }
             EditorGUILayout.EndHorizontal();
@@ -298,7 +317,7 @@ namespace Fove.Unity
                         switch (m_selectedTab)
                         {
                             case 0:
-                                DrawFixSuggestions();
+                                DrawFixSuggestions(serialized);
                                 break;
                             case 1:
                                 DrawSettings(serialized);
@@ -311,11 +330,9 @@ namespace Fove.Unity
                     EditorGUILayout.EndScrollView();
                 }
                 EditorGUILayout.EndVertical();
-                
-                if (FoveSettings.ShouldShowHelp)
-                {
-                    EditorGUILayout.LabelField(m_HelpMessage, m_WordWrapLabel, GUILayout.MaxWidth(position.width * 0.33f), GUILayout.ExpandHeight(true));
-                }
+
+                // Display the help message in the right panel
+                EditorGUILayout.LabelField(m_HelpMessage, m_WordWrapLabel, GUILayout.MaxWidth(position.width * 0.33f), GUILayout.ExpandHeight(true));
             }
             EditorGUILayout.EndHorizontal();
 
@@ -328,9 +345,6 @@ namespace Fove.Unity
             if (MouseInLastElement())
                 SetHelpMessage("Close the FOVE settings window.");
 
-            serialized.FindProperty("showAutomatically").boolValue = GUILayout.Toggle(FoveSettings.ShouldShowAutomatically, "Always Show Suggestions", GUILayout.ExpandWidth(false));
-            if (MouseInLastElement())
-                SetHelpMessage("Whether or not to check for available optimizations every time the plugin is reloaded (typically just on the initial project load).");
             EditorGUILayout.EndHorizontal();
 
             if (!m_HelpMessageWasSet)

@@ -2,14 +2,30 @@
 
 This document explains how to smoothly upgrade the plugin from a previous version in a Unity project.
 
+## Upgrading to 4.4.1
+
+No changes needed for upgrade.
+
+## Upgrading to 4.4.0
+
+The IsHardwareReady APIs have been removed. It is unlikely that your code was using this APIs. If it does use the `FoveManager`'s `IsMotionReady`, `IsPositionReady`, and `IsEyeTrackingReady` functions instead.
+
+The GazeCastPolicy has been removed from the plugin:
+* The error returned by `GetGazedObject` (eg. None/Data_Unreliable/Data_LowAccuracy) should now rather be used to determine if the gazed object should be considered valid
+* For users using the `FoveInterface.Gazecast` API, the gaze cast is now ignored only if convergence ray is invalid. This behavior can be changed by overriding the `FoveInterface.CanSee` function though. So you can easily mimic the old behavior by analyzing left and right eye error status if needed.
+
+`FoveInterface`s' cameras are not automatically disabled at runtime anymore when the `UseVRStereoViewOnPC` setting is enabled. 
+In order to give more freedom to the user, this optimization work now needs to be done at scene edition time.
+Be sure to disable all camera rendering to the main render target in scenes using the `UseVRStereoViewOnPC` option to optimize your application performances.
+
 ## Upgrading to 4.2.0
 
 A public function has been renamed so you may have to adjust your code (see the [changelog](./Changelog.md) for more details).
 
 ## Upgrading to 3.2.0
 
-All Fove APIs return types changed from `Type` to `Result<Type>`. The new result type contains both the previously returned value plus an error code. 
-When you upgrade your code, we recommend you to properly handle error codes where it be critical for your application. 
+All Fove APIs return types changed from `Type` to `Result<Type>`. The new result type contains both the previously returned value plus an error code.
+When you upgrade your code, we recommend you to properly handle error codes where it be critical for your application.
 In all other places you can simply have your old code running by adding `.value` at the end of Fove function calls (e.g. `GetGazeRays().value` where it was `GetGazeRays()`).
 Note that we also added implicit conversion from `Result<Type>` into `Type`, so some calls may already compile out of the box.
 
@@ -25,7 +41,7 @@ Also as the serialized name of the Fove interface's `Client uses: gaze/orientati
 
 Always back up your project before doing a major-version upgrade like this!
 
-A lot has changed in this version, and we decided not to preserve perfect backwards compatibility. All of the core features still exist, in separating HMD-relative methods from Unity-relative methods some things were moved around. 
+A lot has changed in this version, and we decided not to preserve perfect backwards compatibility. All of the core features still exist, in separating HMD-relative methods from Unity-relative methods some things were moved around.
 
 We also removed:
 - the notion of layer (base, overlay, diagnostic) inside the headset. Now all rendering is always performed on the base layer (see below for more details).

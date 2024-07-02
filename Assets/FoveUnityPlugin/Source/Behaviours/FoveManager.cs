@@ -30,12 +30,6 @@ namespace Fove.Unity
         public static IEnumerator WaitForHardwareDisconnected { get { return m_sWaitForHardwareDisconnected; } }
 
         /// <summary>
-        /// Use this to pause a coroutine until the HMD hardware is ready to be used.
-        /// See <see cref="IsHardwareReady()"/> for more details.
-        /// </summary>
-        public static IEnumerator WaitForHardwareReady { get { return m_sWaitForHardwareReady; } }
-
-        /// <summary>
         /// Use this to pause a coroutine until a eye tracking calibration process is started.
         /// See <see cref="IsEyeTrackingCalibrating()"/> for more details.
         /// </summary>
@@ -76,11 +70,6 @@ namespace Fove.Unity
         public static event Action HardwareDisconnected;
 
         /// <summary>
-        /// Triggered when the hardware is ready to be used (e.g. when the value return by <see cref="IsHardwareReady"/> changes to <c>true</c>).
-        /// </summary>
-        public static event Action HardwareIsReady;
-
-        /// <summary>
         /// Triggered when the eye tracking calibration process starts (e.g. when the value returned by <see cref="IsEyeTrackingCalibrating"/> changes to <c>true</c>).
         /// </summary>
         public static event Action EyeTrackingCalibrationStarted;
@@ -107,7 +96,7 @@ namespace Fove.Unity
         public static event Action<bool> UserPresenceChanged;
 
         /// <summary>
-        /// Triggered when the HMD adjusment Gui visibility status changed (e.g. when the value returned by <see cref="IsHmdAdjustementGuiVisible()"/> changes).
+        /// Triggered when the HMD adjustment Gui visibility status changed (e.g. when the value returned by <see cref="IsHmdAdjustementGuiVisible()"/> changes).
         /// </summary>
         public static event Action<bool> HmdAdjustmentGuiVisibilityChanged;
 
@@ -121,7 +110,7 @@ namespace Fove.Unity
         }
 
         /// <summary>
-        /// Get or set the render scale. 
+        /// Get or set the render scale.
         /// </summary>
         public static float RenderScale
         {
@@ -130,32 +119,22 @@ namespace Fove.Unity
         }
 
         /// <summary>
-        /// Specify how gaze cast collision should be dismissed based on the user closed eye state.
+        /// When true, automatically starts the calibration if the eye tracking is not calibrated
         /// </summary>
-        /// <remarks>Default value is taken from the Fove settings.</remarks>
-        public static GazeCastPolicy GazeCastPolicy
-        {
-            get { return Headset.GazeCastPolicy; }
-            set { Headset.GazeCastPolicy = value; }
-        }
+        public static bool EnsureCalibration { get; set; }
 
         /// <summary>
+        /// When true, the FOVE eyes textures are automatically rendered to the PC view.
+        /// This allows you to avoid having to render the screne a third time for your PC view.
+        /// To do so, disable all cameras of your scene (for more details see FoveSettings tooltip)
+        /// </summary>
+        public static bool UseVRStereoViewOnPC { get; set; }
         /// Query whether or not a headset is physically connected to the computer
         /// </summary>
         /// <returns>Whether or not a headset is present on the machine, and the call success status.</returns>
         public static Result<bool> IsHardwareConnected()
         {
             return Headset.IsHardwareConnected();
-        }
-
-        /// <summary>
-        /// Query whether the headset has all requested features booted up and running (position tracking, eye tracking,
-        /// orientation, etc...).
-        /// </summary>
-        /// <returns>Whether you can expect valid data from all headset functions, and the call success status.</returns>
-        public static Result<bool> IsHardwareReady()
-        {
-            return Headset.IsHardwareReady();
         }
 
         /// <summary>
@@ -170,7 +149,7 @@ namespace Fove.Unity
         /// <summary>
         /// Check whether the runtime and client versions are compatible and are expected to work correctly.
         /// </summary>
-        /// <returns>Any errors that occurred when checking the runtime and client versions, or None if 
+        /// <returns>Any errors that occurred when checking the runtime and client versions, or None if
         /// everything seems fine.</returns>
         /// <remarks>Newer runtime versions are designed to be compatible with older client versions, however new
         /// client versions are not designed to be compatible with old runtime versions.</remarks>
@@ -213,7 +192,7 @@ namespace Fove.Unity
         /// Returns information about any licenses currently activated.
         /// </summary>
         /// <returns>Info about zero or more licenses</returns>
-        public static Result<List<Fove.LicenseInfo>> QueryLicenses()
+        public static Result<List<LicenseInfo>> QueryLicenses()
         {
             return Headset.QueryLicenses();
         }
@@ -242,7 +221,7 @@ namespace Fove.Unity
         /// <summary>
         /// Get the direction of the gaze of the specified eye, in the HMD coordinate space.
         /// <para>
-        /// To get the eye gaze in world space coordinate use the <see cref="FoveInterface.GetGazeVector()" instead/>. 
+        /// To get the eye gaze in world space coordinate use the <see cref="FoveInterface.GetGazeVector()" instead/>.
         /// </para>
         /// </summary>
         /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
@@ -319,16 +298,50 @@ namespace Fove.Unity
         }
 
         /// <summary>
+        /// Returns the user's 2D gaze position on a virtual screen in front of the user.
+        /// <para>
+        /// This is a 2D equivalent of `fove_Headset_getCombinedGazeRay`, and is perhaps the
+        /// simplest gaze estimation function.
+        /// </para>
+        /// <para>
+        /// It returns an X/Y coordinate of where on the screen the user is looking. While in
+        /// reality each eye is looking in a different direction at a different [portion of
+        /// the] screen, they mostly agree, and this function returns effectively an average
+        /// to get you a simple X/Y value.
+        /// </para>
+        /// <para>
+        /// The vector is normalized in the range [-1, 1] along both X and Y axes such that the
+        /// following points are true. Center: (0, 0), Bottom-Left: (-1, -1),Top-Right: (1, 1).
+        /// </para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
+        /// <returns>
+        /// The 2D screen position of the combined eye gaze, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public Result<Vector2> GetGazeScreenPositionCombined()
+        {
+            return Headset.GetGazeScreenPositionCombined().ToUnity();
+        }
+
+        /// <summary>
         /// Returns eyes gaze ray resulting from the two eye gazes combined together, in the HMD coordinate space.
         /// <para>
         /// To get individual eye rays use <see cref="GetHmdGazeVector(Eye)"/> instead
         /// </para>
         /// <para>
-        /// To get the user gaze in world space coordinate use the <see cref="FoveInterface.GetCombinedGazeRay()"/> instead. 
+        /// To get the user gaze in world space coordinate use the <see cref="FoveInterface.GetCombinedGazeRay()"/> instead.
         /// </para>
         /// <remarks><see cref="ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
         /// <returns>
-        /// The combined gaze ray in the HMD coordinate space, and the call success status: 
+        /// The combined gaze ray in the HMD coordinate space, and the call success status:
         /// <list type="bullet">
         /// <item><see cref="ErrorCode.None"/> on success</item>
         /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
@@ -348,7 +361,7 @@ namespace Fove.Unity
         /// </summary>
         /// <remarks><see cref="ClientCapabilities.GazeDepth"/> should be registered to use this function.</remarks>
         /// <returns>
-        /// The depth of the combine Gaze, and the call success status: 
+        /// The depth of the combine Gaze, and the call success status:
         /// <list type="bullet">
         /// <item><see cref="ErrorCode.None"/> on success</item>
         /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
@@ -370,7 +383,7 @@ namespace Fove.Unity
         /// </summary>
         /// <remarks><see cref="ClientCapabilities.UserAttentionShift"/> should be registered to use this function.</remarks>
         /// <returns>
-        /// Whether the user is shifting attention, and the call success status: 
+        /// Whether the user is shifting attention, and the call success status:
         /// <list type="bullet">
         /// <item><see cref="ErrorCode.None"/> on success</item>
         /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
@@ -408,6 +421,67 @@ namespace Fove.Unity
         }
 
         /// <summary>
+        /// Returns the blinking state of an individual eye
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeBlink"/> should be registered to use this function.</remarks>
+        /// <param name="eye">Specify which eye to get the value for</param>
+        /// <returns>
+        /// The blinking state of the specified eye, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<bool> IsEyeBlinking(Eye eye)
+        {
+            return Headset.IsEyeBlinking(eye);
+        }
+
+        /// <summary>
+        /// Returns the number of blink performed for the given eye since the eye tracking service started
+        /// <para>To count the number blinks performed during a given period of time call this function at the
+        /// beginning and at the end of the period and make the subtraction of the two values.</para>
+        /// </summary>
+        /// <remarks><see cref="ClientCapabilities.EyeBlink"/> should be registered to use this function.</remarks>
+        /// <param name="eye">Specify which eye to get the value for</param>
+        /// <returns>
+        /// The blinking state of the specified eye, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// <item><see cref="ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
+        /// <item><see cref="ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+        /// </list>
+        /// </returns>
+        public static Result<int> GetEyeBlinkCount(Eye eye)
+        {
+            return Headset.GetEyeBlinkCount(eye);
+        }
+
+        /// <summary>
+        /// Returns whether the eye tracking hardware has started
+        /// </summary>
+        /// <returns>
+        /// Whether eye tracking is running, and the call success status:
+        /// <list type="bullet">
+        /// <item><see cref="ErrorCode.None"/> on success</item>
+        /// <item><see cref="ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+        /// <item><see cref="ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+        /// <item><see cref="ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+        /// </list>
+        /// </returns>
+        public static Result<bool> IsEyeTrackingEnabled()
+        {
+            return Headset.IsEyeTrackingEnabled();
+        }
+
+        /// <summary>
         /// Returns whether eye tracking is calibrated and usable
         /// <para></para>
         /// </summary>
@@ -432,7 +506,7 @@ namespace Fove.Unity
         /// refrain from showing any interactions that would respond to eye gaze.
         /// <para>
         /// You should carefully check the value returned by this function as the calibration process
-        /// can be manually started by the user at any time during your game. 
+        /// can be manually started by the user at any time during your game.
         /// Other than user manual triggering, times when calibration will occur are:
         /// <list type="number">
         /// <item>At the launch of you application, if you check 'Force Calibration' in the fove settings.</item>
@@ -459,7 +533,7 @@ namespace Fove.Unity
         /// Returns whether the eye tracking system is currently calibrated for glasses.
         /// <para>
         /// This basically indicates if the user was wearing glasses during the calibration or not.
-        /// This function returns <see cref="ErrorCode.Data_Uncalibrated"/> if the eye tracking system 
+        /// This function returns <see cref="ErrorCode.Data_Uncalibrated"/> if the eye tracking system
         /// has not been calibrated yet
         /// </para>
         /// </summary>
@@ -796,7 +870,7 @@ namespace Fove.Unity
         /// <summary>
         /// Starts eye tracking calibration
         /// <para>
-        /// After calling this function you should assume that the user cannot see your game until 
+        /// After calling this function you should assume that the user cannot see your game until
         /// <see cref="IsEyeTrackingCalibrating"/> returns false.
         /// </para>
         /// </summary>
@@ -850,7 +924,7 @@ namespace Fove.Unity
 
         /// <summary>
         /// Get the detailed information about the state of the currently running calibration process.
-        /// <para>	
+        /// <para>
         /// When the calibration process is not running, this returns the final state of the previously run calibration process.
         /// Value is undefined if no calibration process has begun since the service was started.
         /// </para>
@@ -1054,7 +1128,7 @@ namespace Fove.Unity
         }
 
         /// <summary>
-        /// Return left and right eyes projection matrices given a near and far clipping plane value. 
+        /// Return left and right eyes projection matrices given a near and far clipping plane value.
         /// This can change from frame to frame, so it's good practice to query this before rendering VR cameras.
         /// </summary>
         /// <remarks>
@@ -1155,8 +1229,8 @@ namespace Fove.Unity
         /// <summary>
         /// Re-fetch and update all the data from the Headset.
         /// <para>
-        /// This function is automatically called at the beginning of each frame, so in most case you won't need it. 
-        /// It can be usefull when the frame processing time is high and you want to be sure to work with the 
+        /// This function is automatically called at the beginning of each frame, so in most case you won't need it.
+        /// It can be useful when the frame processing time is high and you want to be sure to work with the
         /// latest data at some specific time point.
         /// </para>
         /// </summary>

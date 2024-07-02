@@ -8,7 +8,7 @@ public class PrefabController : MonoBehaviour {
     public GameObject prefab1;
     public GameObject prefab2;
 
-    public float maxDistance = 20;
+    public float maxDistance = 50;
     public float step = 2;
 
     private List<GameObject> instances = new List<GameObject>();

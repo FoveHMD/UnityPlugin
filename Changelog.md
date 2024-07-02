@@ -1,5 +1,31 @@
 # FOVE Unity Plugin Changelog
 
+## 4.4.1
+* Update FOVE SDK from v1.3.0 to v1.3.1
+
+## 4.4.0
+* Updated the FOVE SDK from 1.2.0 to 1.3.0
+* Removed the GazeCastPolicy settings from the plugin (see the [upgrade guide](./UpgradeGuide.md) for more information on how to update your code)
+* GazeRecorder: Rename RecordingRate.70FPS/120FPS into RecordingSync.SyncWithRendering/SyncWithEyeTracking
+* Added the `FoveManager.GetGazeScreenPositionCombined` API to get the 2D screen position of the combined gaze.
+* Removed deprecated `FoveManger.IsHardwareReady()`, `FoveManager.WaitForHardwareReady`, and `FoveManager.IsHardwareReady()`
+* Reworked the `ForceCalibration` FOVE setting:
+  * Renamed it into `EnsureCalibration`
+  * Add a corresponding `EnsureCalibration` property to the FoveManager. That can be used at runtime to change the behavior.
+  * Use the `EnsureCalibration` FOVE setting only for the initialization of the `FoveManager.EnsureCalibration` property value
+* Reworked the `CustomDesktopView` Fove setting:
+  * Renamed it into `UseVRStereoViewOnPC`.
+  * Add a corresponding `UseVRStereoViewOnPC` property to the FoveManager. That can be used at runtime to change the behavior.
+  * Use the `UseVRStereoViewOnPC` FOVE setting only for the initialization of the `FoveManager.UseVRStereoViewOnPC` property value
+  * Do not automatically disable cameras associated to `Fove Interface`s at runtime. Instead provide editor helpers that assist you in optimizing your project at edition time.
+* Improved the display of the Fove settings menu a little bit
+* `Fove/Edit settings` menu now redirects directly to the settings tab of the fove settings windows. The fixes tab can be accessed by the newly added `Fove/Game fixes` menu.
+* Rename `PlayerPose.Sitting` into `PlayerPose.Standard` and add comments explaining how the position is impacted
+
+## 4.3.1
+* Update FOVE SDK from v1.2.0 to v1.2.1
+* Fix stack overflow crash happening when moving from scene having a FoveInterface to a scene without any FoveInterface
+
 ## 4.3.0
 * Update FOVE SDK from v1.1.0 to v1.2.0
 * Add the QueryLicenseInfo API to the `FoveManager`
@@ -98,7 +124,7 @@
 * FoveInterface:
     * Make `PositionToEye` function private as it was never intended to be public (and not really usable as a public function anyway)
     * Make `RenderEye` function internal as users should not directly call this function (it is still accessible though)
-    * Remove obsolete and bugged function `CreateGazeRaysFromScreenPoints` 
+    * Remove obsolete and bugged function `CreateGazeRaysFromScreenPoints`
     * Remove obsolete function `Make2DFromVector`. This function was using internal types
     * Add `GazeCastPolicy` field to add more control on how to dismiss gaze cast collisions when the user closes his eyes
 * FoveManager:

@@ -14,6 +14,8 @@ public class UpdateEyesInfo : MonoBehaviour
         public Text pupilText;
         public Text stateText;
         public Text torsionText;
+        public Text isBlinkingText;
+        public Text blinksText;
     }
 
     public EyeInfoTexts leftEyeInfoTexts;
@@ -42,7 +44,8 @@ public class UpdateEyesInfo : MonoBehaviour
             | Fove.ClientCapabilities.IrisRadius
             | Fove.ClientCapabilities.PupilRadius
             | Fove.ClientCapabilities.UserIOD
-            | Fove.ClientCapabilities.UserIPD;
+            | Fove.ClientCapabilities.UserIPD
+            | Fove.ClientCapabilities.EyeBlink;
 
         FoveManager.RegisterCapabilities(caps);
     }
@@ -63,6 +66,14 @@ public class UpdateEyesInfo : MonoBehaviour
         var torsion = FoveManager.GetEyeTorsion(eye);
         var torsionText = torsion.IsValid ? torsion.value.ToString("F2") : torsion.error.ToString();
         infoTexts.torsionText.text = torsionText;
+
+        var blinking = FoveManager.IsEyeBlinking(eye);
+        var blinkingText = blinking.IsValid ? blinking.value.ToString() : blinking.error.ToString();
+        infoTexts.isBlinkingText.text = blinkingText;
+
+        var blinks = FoveManager.GetEyeBlinkCount(eye);
+        var blinkText = blinks.IsValid ? blinks.value.ToString() : blinks.error.ToString();
+        infoTexts.blinksText.text = blinkText;
     }
 
     // Update is called once per frame

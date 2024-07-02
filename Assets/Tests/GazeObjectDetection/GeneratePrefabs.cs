@@ -1,5 +1,6 @@
 ﻿using Fove.Unity;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GeneratePrefabs : MonoBehaviour {
 
@@ -7,6 +8,8 @@ public class GeneratePrefabs : MonoBehaviour {
 
     public int countToInstantiate = 1000;
     public float amplitude = 10;
+
+    public Text ObjectCountText;
 
     // Use this for initialization
     void Start () {
@@ -28,5 +31,7 @@ public class GeneratePrefabs : MonoBehaviour {
             }
         }
         GazableObject.CreateFromColliders(gameObject);
+
+        ObjectCountText.text = "Prefab Object Count: " + cubeRoot * cubeRoot * cubeRoot;
     }
 }

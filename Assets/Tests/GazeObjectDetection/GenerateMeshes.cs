@@ -1,5 +1,6 @@
 ﻿using Fove.Unity;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GenerateMeshes : MonoBehaviour {
     public int count = 100;
@@ -9,6 +10,8 @@ public class GenerateMeshes : MonoBehaviour {
     public int polyCount = 10000;
 
     public Material material;
+
+    public Text ObjectCountText;
 
     // Use this for initialization
     void Start () {
@@ -72,5 +75,6 @@ public class GenerateMeshes : MonoBehaviour {
                 go.AddComponent<GazableObject>();
             }
         }
+        ObjectCountText.text = "Meshes Object Count: " + sqrt * sqrt;
     }
 }

@@ -4,6 +4,8 @@ using UnityEngine.UI;
 
 public class UpdateFPS : MonoBehaviour
 {
+    public string format = "FPS: {0:F1}";
+
     private const int bufferSize = 70; // ~1s
     private const float updateFrequency = 2;
 
@@ -59,7 +61,7 @@ public class UpdateFPS : MonoBehaviour
         if(timeSinceLastUpdate > 1 / updateFrequency)
         {
             var fpsVal = ComputeFps();
-            fpsText.text = string.Format("FPS: {0:F1}", fpsVal);
+            fpsText.text = string.Format(format, fpsVal);
             timeSinceLastUpdate = 0;
         }
     }

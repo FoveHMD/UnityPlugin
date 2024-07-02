@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 public class LoadSceneAsyncAdditive : MonoBehaviour
 {
     public SceneField sceneToLoad;
+    public LoadSceneMode Mode = LoadSceneMode.Single;
 
     void Update ()
     {

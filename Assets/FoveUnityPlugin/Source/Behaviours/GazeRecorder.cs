@@ -50,10 +50,10 @@ public class GazeRecorder : MonoBehaviour
 {
     public const string OutputFolder = "ResultData";
 
-    public enum RecordingRate
+    public enum RecordingSync
     {
-        _70FPS, // synch with vsynch
-        _120FPS, // synch with eye frame
+        SyncWithRendering, // synch with vsynch
+        SyncWithEyeTracking, // synch with eye frame
     }
 
     public enum CoordinateSpace
@@ -146,9 +146,10 @@ public class GazeRecorder : MonoBehaviour
     [Tooltip("Pressing this key will add a mark in the data recording.")]
     public KeyCode markFrameKey = KeyCode.X;
 
-    [Tooltip("Specify the rate at which gaze sampling is performed. 70FPS samples the gaze once every frame." +
-        "120FPS samples the gaze once every new incoming eye data")]
-    public RecordingRate recordingRate;
+    [Tooltip("Specify the rate at which gaze sampling is performed. `SyncWithRendering` synchronizes the gaze samples with the rendering." +
+        "One gaze sample is taken per frame (eg. 70FPS on Fove0). `SyncWithEyeTracking synchronizes the gaze samples with incoming eye frames. " + 
+        "A new gaze sample is taken every time eye data is updated (eg. 120FPS on Fove0)")]
+    public RecordingSync recordingSync;
 
     [Tooltip("Specify the coordinate space used for combined gaze and eye vector rays.")]
     public CoordinateSpace gazeCoordinateSpace;
@@ -305,13 +306,13 @@ public class GazeRecorder : MonoBehaviour
 
         stopwatch.Start();
         if (!Stopwatch.IsHighResolution)
-            Debug.LogWarning("High precision stopwatch is not supported on this machine. Recorded frame times may not be highly accurate.");
+            Debug.LogWarning("GazeRecorder: High precision stopwatch is not supported on this machine. Recorded frame times may not be highly accurate.");
 
         // Check to make sure that the FOVE interface variable is assigned. This prevents a ton of errors
         // from filling your log if you forget to assign the interface through the inspector.
         if (fove == null)
         {
-            Debug.LogWarning("Forgot to assign a Fove interface to the FOVERecorder object.");
+            Debug.LogWarning("GazeRecorder: Forgot to assign a Fove interface to the FOVERecorder object.");
             enabled = false;
             return;
         }
@@ -340,7 +341,7 @@ public class GazeRecorder : MonoBehaviour
         if (exportFields.PupilShape)
             caps |= ClientCapabilities.PupilShape;
 
-        if (recordingRate == RecordingRate._70FPS)
+        if (recordingSync == RecordingSync.SyncWithRendering)
         {
             headset = FoveManager.Headset;
             FoveManager.RegisterCapabilities(caps);
@@ -371,7 +372,7 @@ public class GazeRecorder : MonoBehaviour
             }
             outputFileName = testFileName;
 
-            Debug.Log("Writing data to " + outputFileName);
+            Debug.Log("GazeRecorder: Writing data to " + outputFileName);
         }
 
         dataToWrite.Enqueue(new DataHeaderSerializer(exportFields));
@@ -390,7 +391,7 @@ public class GazeRecorder : MonoBehaviour
         if (Input.GetKeyDown(toggleRecordingKey))
         {
             shouldRecord = !shouldRecord;
-            Debug.Log(shouldRecord ? "Starting" : "Stopping" + " data recording...");
+            Debug.Log("GazeRecorder: " + (shouldRecord ? "Starting" : "Stopping") + " data collecton...");
         }
     }
 
@@ -414,14 +415,27 @@ public class GazeRecorder : MonoBehaviour
     }
     IEnumerator JobsSpawnerCoroutine()
     {
-        // ensure that the headset is connected and ready before starting any recording
+        // Wait for the eye tracking to be ready before starting the recording (recording null data is not very useful)
+        // Another reason to wait is because WaitForProcessedEyeFrame return errors (API_Timeout/Unknown)
+        // when called before the client connection to the service could be properly established
         var nextFrameAwaiter = new WaitForEndOfFrame();
-        while (!FoveManager.IsHardwareConnected())
+        while (true)
+        {
+            var etReady = headset.IsEyeTrackingReady();
+            if (etReady.IsValid && etReady.value)
+                break;
+
+            if (shouldRecord) // log a message to the user to notify him that the recording hasn't actually started yet
+                Debug.Log("GazeRecorder: Waiting for the eye tracking to be ready...");
+
             yield return nextFrameAwaiter;
+        }
+        if (shouldRecord)
+            Debug.Log("GazeRecorder: Eye tracking ready. Start recording data...");
 
         // if the recording rate is the same as the fove rendering rate,
         // we use a coroutine to be sure that recorded gazes are synchronized with frames
-        if (recordingRate == RecordingRate._70FPS)
+        if (recordingSync == RecordingSync.SyncWithRendering)
         {
             // Coroutines give us a bit more control over when the call happens, and also simplify the code
             // structure. However they are only ever called once per frame -- they processing to happen in
@@ -444,7 +458,7 @@ public class GazeRecorder : MonoBehaviour
         dataSlice = new AggregatedData(writeAtDataCount + 1);
 
         if (!threadWaitHandle.Set())
-            Debug.LogError("Error setting the event to wake up the file writer thread on application quit");
+            Debug.LogError("GazeRecorder: Error setting the event to wake up the file writer thread on application quit");
     }
 
     private void UpdateFoveInterfaceMatrices()
@@ -623,7 +637,16 @@ public class GazeRecorder : MonoBehaviour
 
             var result = headset.WaitForProcessedEyeFrame();
             if (result.Failed)
-                Debug.LogError("An error happened while waiting for next eye frame. Error code:" + result.error);
+            {
+                // In practice we observed 3 errors here: Connect_NotConnected/API_Timeout/UnknownError
+                // API_Timeout and UnkownError happen just before/after a connect/disconnection
+                // The three case the error Data_NoUpdate will be returned for all Get queries
+                // so we don't mind stopping the recording
+
+                Debug.LogWarning("GazeRecorder: An error happened while waiting for next eye frame. Next frame recording synchronization might be off. Error code:" + result.error);
+                if (result.error != ErrorCode.API_Timeout)
+                    Thread.Sleep(1000 / 120); // to avoid falling into an active infinite loop
+            }
         }
     }
 
@@ -646,7 +669,7 @@ public class GazeRecorder : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.LogWarning("Exception writing to data file:\n" + e);
+            Debug.LogWarning("GazeRecorder: Exception writing to data file:\n" + e);
             writeThreadShouldLive = false;
         }
     }

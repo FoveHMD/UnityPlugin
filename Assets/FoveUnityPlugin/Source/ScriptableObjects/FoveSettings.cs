@@ -10,22 +10,18 @@ namespace Fove.Unity
     public class FoveSettings : ScriptableObject
     {
         [SerializeField]
-        private bool showHelp = true;
-        [SerializeField]
         private bool showAutomatically = true;
-        
+
         [SerializeField]
-        private bool forceCalibration = false;
+        private bool ensureCalibration = false;
         [SerializeField]
-        private bool customDesktopView = false;
+        private bool customDesktopView = false; // Do not rename this variable for backward compability as it is serialized
         [SerializeField]
         private float worldScale = 1.0f;
         [SerializeField]
         private float renderScale = 1.0f;
         [SerializeField]
         private bool automaticObjectRegistration = false;
-        [SerializeField]
-        private GazeCastPolicy gazeCastPolicy = GazeCastPolicy.DismissBothEyeClosed;
 
         private static FoveSettings _instance;
         private static FoveSettings Instance
@@ -48,26 +44,21 @@ namespace Fove.Unity
         {
             return new SerializedObject(Instance);
         }
-#endif
-
-        public static bool ShouldShowHelp
-        {
-            get { return Instance.showHelp; }
-        }
 
         public static bool ShouldShowAutomatically
         {
             get { return Instance.showAutomatically; }
         }
+#endif
 
-        public static bool ShouldForceCalibration
+        public static bool EnsureCalibration
         {
-            get { return Instance.forceCalibration; }
+            get { return Instance.ensureCalibration; }
         }
 
-        public static bool CustomDesktopView
+        public static bool UseVRStereoViewOnPC
         {
-            get { return Instance.customDesktopView; }
+            get { return !Instance.customDesktopView; }
         }
 
         public static float WorldScale
@@ -83,11 +74,6 @@ namespace Fove.Unity
         public static bool AutomaticObjectRegistration
         {
             get { return Instance.automaticObjectRegistration; }
-        }
-
-        public static GazeCastPolicy GazeCastPolicy
-        {
-            get { return Instance.gazeCastPolicy; }
         }
 
         public static bool IsUsingOpenVR

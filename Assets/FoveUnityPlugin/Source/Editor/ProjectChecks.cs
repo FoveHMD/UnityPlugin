@@ -1,5 +1,8 @@
+using System;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Fove.Unity
 {
@@ -255,6 +258,91 @@ namespace Fove.Unity
         protected override void RealFix()
         {
             PlayerSettings.resizableWindow = false;
+        }
+    }
+
+    // Suggest to disable camera associated with FoveInterfaces when blitting the HMD texture on PC monitor
+    // to avoid Unity to uselessly render the scene once per enabled camera
+    public class DisableFoveInterfaceCameras: SuggestedProjectFix
+    {
+        public DisableFoveInterfaceCameras()
+        {
+            Description = "Optimization: Disable cameras associated to Fove Interfaces";
+            HelpText = "Your project is using the VR stereo view on PC setting. Rendering the VR view is handled by the Fove Interfaces. " +
+                "Having the Fove Interface's camera enabled will cause the scene to render an additional time into the PC window render target. " + 
+                "This can be avoided as the VR stereo view will be copied to PC window render terget anyway.\n\n" +
+                "Click 'fix' to automatically disable all camera associated to Fove Interface.\n\n" +
+                "Note: If you are planning to disable the 'Use VR stereo view on PC' option at runtime, " +
+                "you should probably enable/disable your camera manually as required by your application rather than running this automated fix.";
+        }
+
+        protected override bool RealIsOkay()
+        {
+            return !FoveSettings.UseVRStereoViewOnPC || ProcessAllScenes(true);
+        }
+
+        protected override void RealFix()
+        {
+            ProcessAllScenes(false);
+        }
+
+        private bool ProcessAllScenes(bool analyseOnly)
+        {
+            string[] sceneGuids = AssetDatabase.FindAssets("t:Scene");
+
+            foreach (string sceneGuid in sceneGuids)
+            {
+                string scenePath = AssetDatabase.GUIDToAssetPath(sceneGuid);
+                Scene scene = SceneManager.GetSceneByPath(scenePath);
+                var shouldLoadUnloadScene = !scene.isLoaded;
+
+                // load the scene if necessary
+                if (shouldLoadUnloadScene)
+                    scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
+
+                // process the scene
+                var isOk = ProcessScene(scene, analyseOnly);
+
+                //unload the scene if necessary
+                if (shouldLoadUnloadScene)
+                    EditorSceneManager.CloseScene(scene, true);
+
+                if (analyseOnly && !isOk)
+                    return false;
+            }
+            return true;
+        }
+
+        private bool ProcessScene(Scene scene, bool analyseOnly)
+        {
+            var madeChanges = false;
+
+            var roots = scene.GetRootGameObjects();
+            foreach (var root in roots)
+            {
+                var foveInterfaces = root.GetComponentsInChildren<FoveInterface>();
+                foreach (var fove in foveInterfaces)
+                {
+                    var camera = fove.GetComponent<Camera>();
+                    var isOk = camera == null || !camera.isActiveAndEnabled || camera.targetTexture != null;
+                    if (!isOk)
+                    {
+                        if (analyseOnly)
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            camera.enabled = false;
+                            madeChanges = true;
+                        }
+                    }
+                }
+            }
+            if (madeChanges)
+                EditorSceneManager.SaveScene(scene);
+
+            return true;
         }
     }
 }
