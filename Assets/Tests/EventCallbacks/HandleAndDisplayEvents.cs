@@ -27,7 +27,7 @@ public class HandleAndDisplayEvents : MonoBehaviour
 		FoveManager.HmdAdjustmentGuiVisibilityChanged += (c) => HandleEvent(HmdAdjustEventsText, "Hmd GUI Visible: " + c);
 	}
 
-	void Start()
+    void Start()
 	{
         FoveManager.RegisterCapabilities(Fove.ClientCapabilities.EyeTracking);
         FoveManager.RegisterCapabilities(Fove.ClientCapabilities.UserPresence);
@@ -59,9 +59,10 @@ public class HandleAndDisplayEvents : MonoBehaviour
 	{
 		Debug.Log("Fove Event triggered: " + text);
         AppendEventText(textBlock, text);
-	}
 
-	private IEnumerator WaitForAndPrint(IEnumerator enumerator, string text)
+    }
+
+    private IEnumerator WaitForAndPrint(IEnumerator enumerator, string text)
 	{
 		yield return enumerator;
 		Debug.Log("Coroutine awaked: " + text);

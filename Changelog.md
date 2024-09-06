@@ -1,5 +1,9 @@
 # FOVE Unity Plugin Changelog
 
+## 4.4.3
+* Update FOVE SDK from v1.3.1 to v1.3.3
+* Fix IL2CPP build support
+
 ## 4.4.1
 * Update FOVE SDK from v1.3.0 to v1.3.1
 

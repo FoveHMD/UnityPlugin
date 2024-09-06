@@ -712,7 +712,7 @@ MonoBehaviour:
   sceneToLoad:
     m_SceneAsset: {fileID: 102900000, guid: 0ba7e4956a8a6da4b96b62a999dba90a, type: 3}
     m_SceneName: 6 - Has Fove Interface
-  Mode: 1
+  Mode: 0
 --- !u!4 &1312475732
 Transform:
   m_ObjectHideFlags: 0

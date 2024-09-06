@@ -18,6 +18,6 @@
         /// <summary>
         /// Path number
         /// </summary>
-        public const int RELEASE = 0;
+        public const int RELEASE = 3;
     }
 }

@@ -619,7 +619,7 @@ PlayerSettings:
   scriptingDefineSymbols: {}
   platformArchitecture: {}
   scriptingBackend:
-    Standalone: 0
+    Standalone: 1
     WebPlayer: 0
   incrementalIl2cppBuild: {}
   additionalIl2CppArgs: 

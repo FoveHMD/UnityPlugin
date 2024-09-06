@@ -38,7 +38,7 @@ public class FoveInterfaceEditor : Editor
     private GUIContent castCullMaskLabel = new GUIContent("Cull Mask");
     private GUIContent registerCameraLabel = new GUIContent("Register Camera");
 
-    protected SerializedProperty GetAndCheckSeriazedProperty(string name)
+    protected SerializedProperty GetAndCheckSerializedProperty(string name)
     {
         var ret = serializedObject.FindProperty(name);
         if (ret == null)
@@ -54,25 +54,25 @@ public class FoveInterfaceEditor : Editor
 
     protected virtual void EnableProperties()
     {
-        _gaze = GetAndCheckSeriazedProperty("fetchGaze");
-        _orientation = GetAndCheckSeriazedProperty("fetchOrientation");
-        _position = GetAndCheckSeriazedProperty("fetchPosition");
+        _gaze = GetAndCheckSerializedProperty("fetchGaze");
+        _orientation = GetAndCheckSerializedProperty("fetchOrientation");
+        _position = GetAndCheckSerializedProperty("fetchPosition");
         
-        _eyeTargets = GetAndCheckSeriazedProperty("eyeTargets");
-        _poseType = GetAndCheckSeriazedProperty("poseType");
+        _eyeTargets = GetAndCheckSerializedProperty("eyeTargets");
+        _poseType = GetAndCheckSerializedProperty("poseType");
 
-        _cullMaskLeft = GetAndCheckSeriazedProperty("cullMaskLeft");
-        _cullMaskRight = GetAndCheckSeriazedProperty("cullMaskRight");
+        _cullMaskLeft = GetAndCheckSerializedProperty("cullMaskLeft");
+        _cullMaskRight = GetAndCheckSerializedProperty("cullMaskRight");
 
-        _registerCameraObject = GetAndCheckSeriazedProperty("registerCameraObject");
-        _gazeCastCullMask = GetAndCheckSeriazedProperty("gazeCastCullMask");
+        _registerCameraObject = GetAndCheckSerializedProperty("registerCameraObject");
+        _gazeCastCullMask = GetAndCheckSerializedProperty("gazeCastCullMask");
 
-        //_compositorLayerType = GetAndCheckSeriazedProperty("layerType");
-        _compositorDisableTimewarp = GetAndCheckSeriazedProperty("disableTimewarp");
-        //_compositorDisableDistortion = GetAndCheckSeriazedProperty("disableDistortion");
+        //_compositorLayerType = GetAndCheckSerializedProperty("layerType");
+        _compositorDisableTimewarp = GetAndCheckSerializedProperty("disableTimewarp");
+        //_compositorDisableDistortion = GetAndCheckSerializedProperty("disableDistortion");
 
-        _dismissCameraEnabledWarning = GetAndCheckSeriazedProperty("cameraEnabledWarningDismissed");
-        _dismissCameraDisabledWarning = GetAndCheckSeriazedProperty("cameraDisabledWarningDismissed");
+        _dismissCameraEnabledWarning = GetAndCheckSerializedProperty("cameraEnabledWarningDismissed");
+        _dismissCameraDisabledWarning = GetAndCheckSerializedProperty("cameraDisabledWarningDismissed");
     }
 
     // Currently does not support editing of multiple objects at once.

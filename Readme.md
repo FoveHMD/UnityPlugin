@@ -10,7 +10,7 @@ If you are not interested in the source code but only in getting the plugin, we 
 
 | FOVE Plugin version | Compatible FOVE Runtime versions | Compatible Unity versions | 
 |------|---------|----------|
-| v4.4 | >= v1.3 | >= 2017.4
+| v4.4 | >= v1.3 | >= 2018.4
 | v4.3 | >= v1.2 | >= 2017.4	
 | v4.2 | >= v1.1 | >= 5.4	
 | v4.1 | >= v1.0 | >= 5.4	

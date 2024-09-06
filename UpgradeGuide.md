@@ -2,6 +2,10 @@
 
 This document explains how to smoothly upgrade the plugin from a previous version in a Unity project.
 
+## Upgrading to 4.4.3
+
+No changes needed for upgrade.
+
 ## Upgrading to 4.4.1
 
 No changes needed for upgrade.

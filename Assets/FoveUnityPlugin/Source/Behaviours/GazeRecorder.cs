@@ -11,6 +11,7 @@ using System.Text;
 using Stopwatch = System.Diagnostics.Stopwatch;
 using System.Globalization;
 
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -131,6 +132,9 @@ public class GazeRecorder : MonoBehaviour
 
         [Tooltip("The shape of the pupil ellipse on the eye camera image")]
         public bool PupilShape = true;
+
+        [Tooltip("The blink count of the user eyes")]
+        public bool EyeBlinkCount = true;
     }
 
     // Require a reference (assigned via the Unity Inspector panel) to a FoveInterface object.
@@ -202,6 +206,7 @@ public class GazeRecorder : MonoBehaviour
         public Stereo<Result<Vector2>> ScreenGaze;
         public Stereo<Result<Fove.Unity.EyeShape>> EyeShape;
         public Stereo<Result<Fove.Unity.PupilShape>> PupilShape;
+        public Stereo<Result<int>> EyeBlinkCount;
     }
 
     const char CsvSeparator = ',';
@@ -340,6 +345,8 @@ public class GazeRecorder : MonoBehaviour
             caps |= ClientCapabilities.EyeShape;
         if (exportFields.PupilShape)
             caps |= ClientCapabilities.PupilShape;
+        if (exportFields.EyeBlinkCount)
+            caps |= ClientCapabilities.EyeBlink;
 
         if (recordingSync == RecordingSync.SyncWithRendering)
         {
@@ -564,6 +571,9 @@ public class GazeRecorder : MonoBehaviour
         var eyeTorsionL = headset.GetEyeTorsion(Eye.Left);
         var eyeTorsionR = headset.GetEyeTorsion(Eye.Right);
 
+        var eyeBlinkCountL = headset.GetEyeBlinkCount(Eye.Left);
+        var eyeBlinkCountR = headset.GetEyeBlinkCount(Eye.Right);
+
         // If you add new fields, be sure to write them here.
         var datum = new Datum
         {
@@ -588,6 +598,7 @@ public class GazeRecorder : MonoBehaviour
             ScreenGaze = new Stereo<Result<Vector2>>(headset.GetGazeScreenPosition(Eye.Left).ToUnity(), headset.GetGazeScreenPosition(Eye.Right).ToUnity()),
             EyeShape = new Stereo<Result<Fove.Unity.EyeShape>>(headset.GetEyeShape(Eye.Left).ToUnity(), headset.GetEyeShape(Eye.Right).ToUnity()),
             PupilShape = new Stereo<Result<Fove.Unity.PupilShape>>(headset.GetPupilShape(Eye.Left).ToUnity(), headset.GetPupilShape(Eye.Right).ToUnity()),
+            EyeBlinkCount = new Stereo<Result<int>>(eyeBlinkCountL, eyeBlinkCountR),
         };
         dataSlice.Add(datum);
 
@@ -852,6 +863,16 @@ public class GazeRecorder : MonoBehaviour
                 }
             }
 
+            if (export.EyeBlinkCount)
+            {
+                for (int eye = 0; eye < 2; eye++)
+                {
+                    var h = "Eye Blink Count" + (eye == 0 ? " left" : " right");
+                    appendValue(builder, h);
+                    appendValue(builder, h + " error");
+                }
+            }
+
             builder.Remove(builder.Length - 1, 1); // remove the last separator of the line
             builder.AppendLine();
         }
@@ -946,6 +967,12 @@ public class GazeRecorder : MonoBehaviour
         {
             AppendValue(builder, state.value ? "1" : "0");
             AppendValue(builder, state.error);
+        }
+
+        private void Append(StringBuilder builder, Result<int> value)
+        {
+            AppendValue(builder, value.value);
+            AppendValue(builder, value.error);
         }
 
         private void Append(StringBuilder builder, Result<Vector2> point)
@@ -1083,6 +1110,12 @@ public class GazeRecorder : MonoBehaviour
                         AppendValue(builder, angleFormat, pupilShape.value.angle);
                         AppendValue(builder, pupilShape.error);
                     }
+                }
+
+                if (export.EyeBlinkCount)
+                {
+                    Append(builder, datum.EyeBlinkCount.left);
+                    Append(builder, datum.EyeBlinkCount.right);
                 }
 
                 if (builder.Length > 2) // remove the last "," of the line
