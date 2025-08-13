@@ -8,4 +8,5 @@ Temp/
 Packages/
 Build/
 obj/
+Logs/
 fove_recorded_results*

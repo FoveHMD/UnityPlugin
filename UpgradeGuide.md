@@ -2,6 +2,18 @@
 
 This document explains how to smoothly upgrade the plugin from a previous version in a Unity project.
 
+## Upgrading to 4.5.0
+
+If you use the `QueryClientVersion()`, `QueryClientBuildDate()`, `QuerySoftwareVersions()` or `QueryRuntimeBuildDate()` in the `FoveManager`, please remove it and get the necesally values from the `FoveManager.QuerySoftwareVersions()`.
+* For all textures made from FOVE service bitmaps (eg. Eyes image, Position Image), use the material with the `Fove/UnlitGreyShader` shader.
+* It properly handles ALLOW_TOP_DOWN_BITMAP / ALLOW_BITMAP_PALETTE config options.
+* If `ALLOW_TOP_DOWN_BITMAP` is set to `false` in `FoveVR.config`, make sure to disable the `Flip Vertically` toggle on the material.
+* Negative Y-scaling is not supported in the `Fove/UnlitGreyShader` shader.
+
+## Upgrading to 4.4.4
+
+No changes needed for upgrade.
+
 ## Upgrading to 4.4.3
 
 No changes needed for upgrade.

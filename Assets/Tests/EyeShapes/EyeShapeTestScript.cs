@@ -36,8 +36,8 @@ public class EyeShapeTestScript : MonoBehaviour
                 eyePointsRight[i] = (GameObject)Instantiate(prefab, eyePointRootRight, false);
 
                 var size = 7f;
-                eyePointsLeft[i].transform.localScale = size * new Vector3(1, -1, 1);
-                eyePointsRight[i].transform.localScale = size * new Vector3(1, -1, 1);
+                eyePointsLeft[i].transform.localScale = size * Vector3.one;
+                eyePointsRight[i].transform.localScale = size * Vector3.one;
 
                 eyePointsLeft[i].GetComponentInChildren<Text>().text = i.ToString();
                 eyePointsRight[i].GetComponentInChildren<Text>().text = i.ToString();
@@ -81,7 +81,7 @@ public class EyeShapeTestScript : MonoBehaviour
 
         int i = 0;
         foreach (var point in shapes.Outline)
-            eyePoints[i++].transform.localPosition = new Vector3(point.x, point.y, 0);
+            eyePoints[i++].transform.localPosition = new Vector3(point.x, -point.y, 0);
     }
 
     void UpdatePupilShape(Fove.Eye eye)
@@ -96,7 +96,7 @@ public class EyeShapeTestScript : MonoBehaviour
         var shape = shapeResult.value;
         var pupil = eye == Fove.Eye.Left ? pupilLeft : pupilRight;
 
-        pupil.transform.localPosition = new Vector3(shape.center.x, shape.center.y, 0);
+        pupil.transform.localPosition = new Vector3(shape.center.x, -shape.center.y, 0);
         pupil.transform.localScale = new Vector3(shape.size.x, shape.size.y, 1);
         pupil.transform.localRotation = Quaternion.Euler(0, 0, shape.angle);
     }

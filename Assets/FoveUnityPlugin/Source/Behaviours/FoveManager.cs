@@ -159,33 +159,12 @@ namespace Fove.Unity
         }
 
         /// <summary>
-        /// Query the version of the Fove client library. This returns "[major].[minor].[build]".
+        /// Query the versions of the FOVE runtime and client library.
         /// </summary>
-        /// <returns>A string representing the client library version, and the call success status</returns>
-        public static Result<string> QueryClientVersion()
+        /// <returns>The versions of the FOVE runtime and client library.</returns>
+        public static Result<Versions> QuerySoftwareVersions()
         {
-            var result = Headset.QuerySoftwareVersions();
-
-            var versionString = result.IsValid
-                ? "" + result.value.clientMajor + "." + result.value.clientMinor + "." + result.value.clientBuild
-                : "Unknown";
-
-            return new Result<string>() { value = versionString, error = result.error };
-        }
-
-        /// <summary>
-        /// Query the version of the installed runtime service. This returns "[major].[minor].[build]".
-        /// </summary>
-        /// <returns>A string representing the runtime library version, and the call success status</returns>
-        public static Result<string> QueryRuntimeVersion()
-        {
-            var result = Headset.QuerySoftwareVersions();
-
-            var versionString = result.IsValid
-                ? "" + result.value.runtimeMajor + "." + result.value.runtimeMinor + "." + result.value.runtimeBuild
-                : "Unknown";
-
-            return new Result<string>() { value = versionString, error = result.error };
+            return Headset.QuerySoftwareVersions();
         }
 
         /// <summary>
@@ -217,6 +196,57 @@ namespace Fove.Unity
             Instance.enforcedCapabilities &= ~capabilities;
             Instance.UpdateCapabilities();
         }
+
+        /// <summary>
+        /// Registers passive capabilities for this client
+        /// </summary>
+        /// <remarks>
+        /// The difference between active capabilties (those registered with `fove_Headset_registerCapabilities`) is that
+        ///  passive capabilities are not used to enable hardware or software components. There must be at least one active
+        ///  capability registered for the required hardware/software modules to be enabled.
+
+        ///  However, if another app registers the same capability actively, you can use passive capabilities to read the data
+        ///  being exported0 from the service on behalf of another client who has registered the capability actively.
+
+        ///  Basically, this means "if it's on I want it, but I don't want to turn it on myself".
+
+        ///  Within a single client, there's no point to registering a capability passively if it's already registered actively.
+        ///  However, this is not an error, and the capability will be registered passively. The two lists are kept totally separate.
+        ///  </remarks>
+        ///  <param name="caps">A set of capabilities to register. Registering an existing capability is a no-op</param>
+        ///  <returns>
+        ///  <list type="bullet">
+        ///  <item><see cref="F:Fove.ErrorCode.None"/> if the capability has been properly registered locally</item>
+        ///  <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if param pointer is null</item>
+        ///  <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+        ///  <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+        ///  </list>
+        ///  </returns>
+        public static Result RegisterPassiveCapabilities(ClientCapabilities capabilities)
+        {
+            return Headset.RegisterPassiveCapabilities(capabilities);
+        }
+
+        /// <summary>
+        /// Unregisters a client capability previously registered
+        /// </summary>
+        /// <remarks>
+        /// Removes capabilities previously added by <see cref="T:Fove.Headset"/> or <see cref="M:Fove.Headset.RegisterCapabilities(Fove.ClientCapabilities)"/>.
+        /// </remarks>
+        /// See <see cref="M:Fove.Headset.RegisterCapabilities(Fove.ClientCapabilities)"/> for details on registration / unregistration.
+        /// <param name="caps">A set of capabilities to unregister. Unregistering an not-existing capability is a no-op</param>
+        /// <returns>
+        /// <list type="bullet">
+        /// <item><see cref="F:Fove.ErrorCode.None"/> if the capability has been properly unregistered</item>
+        /// <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+        /// <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+        /// </list>
+        /// </returns>
+        public static Result UnregisterPassiveCapabilities(ClientCapabilities capabilities)
+        {
+            return Headset.UnregisterPassiveCapabilities(capabilities);
+        }
+
 
         /// <summary>
         /// Get the direction of the gaze of the specified eye, in the HMD coordinate space.

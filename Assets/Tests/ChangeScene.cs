@@ -8,7 +8,7 @@ public class ChangeScene : MonoBehaviour {
     [SerializeField]
     private string[] sceneName;
 
-	public void SwtichToScene(string name)
+	public void SwitchToScene(string name)
 	{
         SceneManager.LoadScene(name);
     }
@@ -17,39 +17,41 @@ public class ChangeScene : MonoBehaviour {
 	void Update () {
 
 		if (Input.GetKeyDown(KeyCode.Alpha1))
-            SwtichToScene(sceneName[0]);
+            SwitchToScene(sceneName[0]);
         else if (Input.GetKeyDown(KeyCode.Alpha2))
-            SwtichToScene(sceneName[1]);
+            SwitchToScene(sceneName[1]);
         else if (Input.GetKeyDown(KeyCode.Alpha3))
-            SwtichToScene(sceneName[2]);
+            SwitchToScene(sceneName[2]);
         else if (Input.GetKeyDown(KeyCode.Alpha4))
-            SwtichToScene(sceneName[3]);
+            SwitchToScene(sceneName[3]);
         else if (Input.GetKeyDown(KeyCode.Alpha5))
-            SwtichToScene(sceneName[4]);
+            SwitchToScene(sceneName[4]);
         else if (Input.GetKeyDown(KeyCode.Alpha6))
-            SwtichToScene(sceneName[5]);
+            SwitchToScene(sceneName[5]);
         else if (Input.GetKeyDown(KeyCode.Alpha7))
-            SwtichToScene(sceneName[6]);
+            SwitchToScene(sceneName[6]);
         else if (Input.GetKeyDown(KeyCode.Alpha8))
-            SwtichToScene(sceneName[7]);
+            SwitchToScene(sceneName[7]);
         else if (Input.GetKeyDown(KeyCode.Alpha9))
-            SwtichToScene(sceneName[8]);
+            SwitchToScene(sceneName[8]);
         else if (Input.GetKeyDown(KeyCode.Alpha0))
-            SwtichToScene(sceneName[9]);
+            SwitchToScene(sceneName[9]);
 
         if (Input.GetKeyDown(KeyCode.Alpha1) && Input.GetKey(KeyCode.LeftShift))
-            SwtichToScene(sceneName[10]);
+            SwitchToScene(sceneName[10]);
         else if (Input.GetKeyDown(KeyCode.Alpha2) && Input.GetKey(KeyCode.LeftShift))
-            SwtichToScene(sceneName[11]);
+            SwitchToScene(sceneName[11]);
         else if (Input.GetKeyDown(KeyCode.Alpha3) && Input.GetKey(KeyCode.LeftShift))
-            SwtichToScene(sceneName[12]);
+            SwitchToScene(sceneName[12]);
 
         if (Input.GetKeyDown(KeyCode.Alpha1) && Input.GetKey(KeyCode.LeftAlt))
-            SwtichToScene(sceneName[13]);
+            SwitchToScene(sceneName[13]);
         else if (Input.GetKeyDown(KeyCode.Alpha2) && Input.GetKey(KeyCode.LeftAlt))
-            SwtichToScene(sceneName[14]);
+            SwitchToScene(sceneName[14]);
         else if (Input.GetKeyDown(KeyCode.Alpha3) && Input.GetKey(KeyCode.LeftAlt))
-            SwtichToScene(sceneName[15]);
+            SwitchToScene(sceneName[15]);
+        else if (Input.GetKeyDown(KeyCode.Alpha4) && Input.GetKey(KeyCode.LeftAlt))
+            SwitchToScene(sceneName[16]);
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {

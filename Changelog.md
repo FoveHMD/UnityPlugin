@@ -1,5 +1,19 @@
 # FOVE Unity Plugin Changelog
 
+## 4.5.0
+* Update FOVE SDK from v1.3.3 to v1.4.0
+* `FoveManager`: Removed the `QueryClientVersion` and `QueryServiceVersions` functions. Added the `QuerySoftwareVersions` function.
+* Add `Fove/UnlitGreyShader` to support `ALLOW_TOP_DOWN_BITMAP` and `ALLOW_PALETTIZED_BITMAP` FOVE VR config values.
+* Add `RegisterPassiveCapabilities` and `UnregisterPassiveCapabilities` API to passively register/unregister capabilities
+* Add new error code `License_Revoked`
+* FOVE SDK: Fix various comments in `FoveCient_CLR.xml` for improved clarity
+* FOVE SDK: Add a small delay to `Compositor_submit` on error to prevent excessive CPU/GPU usage and runaway frame rates in engines that do not sync to the screen
+  (Use `COMPOSITOR_DELAY_MS_ON_SUBMIT_ERROR=0` to disable)
+
+## 4.4.4
+* Fix an issue with the project fixup trying to load readonly scenes
+* Disable to the project fixup dialog while the game is playing inside the editor to avoid issues when trying to modify loaded assets
+
 ## 4.4.3
 * Update FOVE SDK from v1.3.1 to v1.3.3
 * Fix IL2CPP build support

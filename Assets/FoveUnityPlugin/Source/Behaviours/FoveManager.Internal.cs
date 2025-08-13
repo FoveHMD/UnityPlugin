@@ -667,20 +667,19 @@ namespace Fove.Unity
                 cacheImg = imgResult.value;
                 if (cacheImg.Width == 0 || cacheImg.Height == 0)
                     return;
-
                 var tex = texResult.value;
-                if (tex != null && (tex.width != cacheImg.Width || tex.height != cacheImg.Height))
+                TextureFormat cacheImgTextureFormat = cacheImg.Is8BitGrayscale ? TextureFormat.R8 : TextureFormat.RGB24;
+                if (tex != null && (tex.width != cacheImg.Width || tex.height != cacheImg.Height || tex.format != cacheImgTextureFormat))
                 {
                     Texture2D.Destroy(tex);
                     tex = null;
                 }
-
                 if (tex == null)
-                    tex = new Texture2D(cacheImg.Width, cacheImg.Height, TextureFormat.RGB24, false);
-
+                {
+                    tex = new Texture2D(cacheImg.Width, cacheImg.Height, cacheImgTextureFormat, false);
+                }
                 tex.LoadRawTextureData(cacheImg.ImageData.data, (int)cacheImg.ImageData.length);
                 tex.Apply();
-
                 texResult.value = tex;
             }
             catch (Exception e)

@@ -16,6 +16,9 @@ public class AssignTextures : MonoBehaviour {
 
     void Start()
     {
+        Material greyMat = new Material(Shader.Find("Fove/UnlitGreyShader"));
+        EyesImage.material = greyMat;
+        PositionImage.material = greyMat;
         EnableEyesImage(true);
         EnablePosImage(true);
     }

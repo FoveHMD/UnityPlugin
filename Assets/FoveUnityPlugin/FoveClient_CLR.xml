@@ -9,6 +9,12 @@
             Represent a plain bitmap image
             </summary>
         </member>
+        <member name="M:Fove.Bitmap.#ctor(Fove.BitmapImage)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Fove.Bitmap"/> class with the specified image.
+            </summary>
+            <param name="image">The bitmap image to initialize with.</param>
+        </member>
         <member name="P:Fove.Bitmap.Width">
             <summary>
             The width of the bitmap image in pixels
@@ -18,6 +24,19 @@
             <summary>
             The height of the bitmap image in pixels
             </summary>
+        </member>
+        <member name="P:Fove.Bitmap.IsTopDown">
+            <summary>
+            Returns true if the image is top down (the first row in memory is the top row of the image)
+            </summary>
+        </member>
+        <member name="P:Fove.Bitmap.Is8BitGrayscale">
+            <summary>
+            Returns true if the image is grayscale (8 bits per pixel)
+            </summary>
+            <remarks>
+            All 8bit images from the FOVE service have a linear 0-255 greyscale palette, so the palette itself is ignored.
+            </remarks>
         </member>
         <member name="P:Fove.Bitmap.Timestamp">
             <summary>
@@ -40,6 +59,11 @@
             It is the main way to draw content to a headset.
             </summary>
         </member>
+        <member name="P:Fove.Compositor.CompositorPtr">
+            <summary>
+            The native compositor pointer
+            </summary>
+        </member>
         <member name="M:Fove.Compositor.Finalize">
             <summary>
             Dispose native resources and destroy the compositor wrapper
@@ -52,7 +76,7 @@
             This function create a layer upon which frames may be submitted to the compositor by this client.
             </para>
             <para>
-            A connection to the compositor must exists for this to pass.
+            A connection to the compositor must exist for this to pass.
             This means you need to wait for fove_Compositor_isReady before calling this function.
             However, if connection to the compositor is lost and regained, this layer will persist.
             For this reason, you should not recreate your layers upon reconnection, simply create them once.
@@ -140,7 +164,6 @@
             type for outTexture, based on the API passed to the submit function.
             </para>
             </summary>
-            <param name="outTexture">The mirror texture</param>
             <param name="outWidth">The width of the mirror texture</param>
             <param name="outHeight">The height of the mirror texture</param>
         </member>
@@ -297,6 +320,28 @@
             </list>
             </returns>
         </member>
+        <member name="T:Fove.BoolByte">
+             <summary>
+             A layout-safe replacement for <see cref="T:System.Boolean"/> when used inside structs/classes that need to be
+             marshaled to native code or used in interop scenarios.
+            
+             Unity's IL2CPP backend may not reliably marshal <c>bool</c> fields — especially in
+             <c>[StructLayout]</c>-annotated types — because it may treat <c>bool</c> as 4 bytes instead of 1 byte,
+             which leads to memory layout mismatches and runtime errors in native interop.
+            
+             This struct ensures that a <c>bool</c>-like value is stored as a single byte (<c>byte</c>)
+             and provides implicit conversion so it can be used almost transparently in C# code.
+            
+             <para>
+             Use <c>BoolByte</c> in place of <c>bool</c> for any field that:
+             <list type="bullet">
+               <item>Is part of a <c>[StructLayout]</c> struct or class used with native interop</item>
+               <item>Needs to be passed to or from unmanaged code</item>
+               <item>Must be tightly packed with other fields without unexpected padding</item>
+             </list>
+             </para>
+             </summary>
+        </member>
         <member name="T:Fove.ClientCapabilities">
             <summary>
             List of capabilities usable by clients
@@ -438,7 +483,7 @@
         </member>
         <member name="F:Fove.ErrorCode.API_InvalidArgument">
             <summary>
-            An argument passed to an API function was invalid for a reason other than one of the below reasons
+            An argument passed to an API function was invalid for a reason not listed below
             </summary>
         </member>
         <member name="F:Fove.ErrorCode.API_NotRegistered">
@@ -470,6 +515,11 @@
         <member name="F:Fove.ErrorCode.API_MissingArgument">
             <summary>
             The service was expecting extra arguments that the client didn't provide
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.API_AlreadyInTheDesiredState">
+            <summary>
+            For functions that request some state change, this indicates that no action was taken due to being in the correct state
             </summary>
         </member>
         <member name="F:Fove.ErrorCode.API_Timeout">
@@ -583,6 +633,21 @@
             You don't have the license rights to use the corresponding feature
             </summary>
         </member>
+        <member name="F:Fove.ErrorCode.License_Expired">
+            <summary>
+            Your license is expired already
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.License_ClockError">
+            <summary>
+            Your local clock is invalid
+            </summary>
+        </member>
+        <member name="F:Fove.ErrorCode.License_TooManyActivations">
+            <summary>
+            Your license has been activated too many times
+            </summary>
+        </member>
         <member name="F:Fove.ErrorCode.Profile_DoesntExist">
             <summary>
             The profile doesn't exist
@@ -672,6 +737,21 @@
             The build version number of the client library
             </summary>
         </member>
+        <member name="F:Fove.Versions.clientYear">
+            <summary>
+            The build date of the client library
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.clientMonth">
+            <summary>
+            The build date of the client library (Range: 1 to 12)
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.clientDay">
+            <summary>
+            The build date of the client library (Range: 1 to 31)
+            </summary>
+        </member>
         <member name="F:Fove.Versions.clientProtocol">
             <summary>
             The version of the communication protocol the client is using
@@ -695,6 +775,21 @@
         <member name="F:Fove.Versions.runtimeBuild">
             <summary>
             The build version number of the fove service
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.runtimeYear">
+            <summary>
+            The build date of the fove service
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.runtimeMonth">
+            <summary>
+            The build date of the fove service (Range: 1 to 12)
+            </summary>
+        </member>
+        <member name="F:Fove.Versions.runtimeDay">
+            <summary>
+            The build date of the fove service (Range: 1 to 31)
             </summary>
         </member>
         <member name="F:Fove.Versions.runtimeHash">
@@ -860,7 +955,7 @@
         <member name="T:Fove.Vec3">
             <summary>
             Struct to represent a 3D-vector
-            <para>A vector that represents an position in 3D space.</para>
+            <para>A vector that represents a position in 3D space.</para>
             </summary>
         </member>
         <member name="F:Fove.Vec3.x">
@@ -1317,7 +1412,7 @@
         </member>
         <member name="F:Fove.ObjectCollider.ColliderMesh.vertexCount">
             <summary>
-            The number of element in the vertex buffer
+            The number of elements in the vertex buffer
             <para>
             Note that one vertex has three component (X, Y, Z).
             So the size of vertices array is `3 x vertexCount`.
@@ -1340,7 +1435,7 @@
         </member>
         <member name="F:Fove.ObjectCollider.ColliderMesh.triangleCount">
             <summary>
-            The number of triangle present in the mesh
+            The number of triangles present in the mesh
             </summary>
         </member>
         <member name="F:Fove.ObjectCollider.ColliderMesh.boundingBox">
@@ -1425,7 +1520,7 @@
         </member>
         <member name="T:Fove.SphereCollider">
             <summary>
-            A collider have the shape of a Sphere
+            A collider with the shape of a Sphere
             </summary>
         </member>
         <member name="M:Fove.SphereCollider.#ctor">
@@ -1504,7 +1599,7 @@
         </member>
         <member name="M:Fove.MeshColliderBase`2.GetIndexCount">
             <summary>
-            Return the number of indices in the in the array
+            Return the number of indices in the array
             </summary>
             <returns></returns>
         </member>
@@ -1674,6 +1769,11 @@
         <member name="F:Fove.CompositorLayerCreateInfo.disableDistortion">
             <summary>
             Setting to disable a distortion pass, e.g. for a diagnostic client, or a client intending to do its own distortion
+            </summary>
+        </member>
+        <member name="F:Fove.CompositorLayerCreateInfo._pad0">
+            <summary>
+            Ensure the total size is a multiple of 4 or 8 bytes (important for native interop or array usage)
             </summary>
         </member>
         <member name="T:Fove.CompositorLayer">
@@ -1945,7 +2045,7 @@
         </member>
         <member name="T:Fove.PupilShape">
             <summary>
-            Specity the shape of a pupil as an ellipse
+            Specify the shape of a pupil as an ellipse
             Coordinates are in eye-image pixels from (0,0) to (camerawidth, cameraheight), with (0,0) being the top left.
             </summary>
         </member>
@@ -2008,14 +2108,14 @@
             A failure can happen any time during the process, and stops the process where it was.
             </para>
             <para>
-            From the `ProcessingData` state the calibration process do not require any rendering
+            From the `ProcessingData` state the calibration process does not require any rendering
             and gameplay can be started if wanted but new calibration won't be effective before reaching the `Successful` state.
             </para>
             </summary>
         </member>
         <member name="F:Fove.CalibrationState.NotStarted">
             <summary>
-            No calibration process haven't been started yet
+            No calibration process has been started yet
             </summary>
         </member>
         <member name="F:Fove.CalibrationState.HeadsetAdjustment">
@@ -2125,7 +2225,7 @@
         </member>
         <member name="F:Fove.EyeByEyeCalibration.Disabled">
             <summary>
-            Calibrate both eye simultaneously
+            Calibrate both eyes simultaneously
             </summary>
         </member>
         <member name="F:Fove.EyeByEyeCalibration.Enabled">
@@ -2326,12 +2426,12 @@
         </member>
         <member name="P:Fove.Result.Succeeded">
             <summary>
-            Return true if the function call succeeded, false otherwise.
+            Returns true if the function call succeeded, false otherwise.
             </summary>
         </member>
         <member name="P:Fove.Result.Failed">
             <summary>
-            Return true if the function call returned an error, false otherwise.
+            Returns true if the function call returned an error, false otherwise.
             </summary>
         </member>
         <member name="M:Fove.Result.#ctor(Fove.ErrorCode)">
@@ -2360,12 +2460,12 @@
         </member>
         <member name="P:Fove.Result`1.IsValid">
             <summary>
-            Return true if the returned value is valid, false otherwise
+            Returns true if the returned value is valid, false otherwise
             </summary>
         </member>
         <member name="P:Fove.Result`1.IsReliable">
             <summary>
-            Return true if the returned value is reliable (i.e. of good accuracy)
+            Returns true if the returned data is valid and considered reliable (i.e. of good accuracy)
             </summary>
         </member>
         <member name="M:Fove.Result`1.#ctor(`0,Fove.ErrorCode)">
@@ -2383,7 +2483,12 @@
         </member>
         <member name="T:Fove.Headset">
             <summary>
-            This class is a wrapper around the C API's Fove_Headset, and is the main class of the FOVE API.
+            This class is a wrapper around the C API's Fove_Headset, and is the main class of the FOVE API
+            </summary>
+        </member>
+        <member name="P:Fove.Headset.HeadsetPtr">
+            <summary>
+            The native pointer to the headset object
             </summary>
         </member>
         <member name="M:Fove.Headset.#ctor(Fove.ClientCapabilities)">
@@ -2391,28 +2496,63 @@
             Creates a new headset object with the given capabilities
             </summary>
             <param name="capabilities">The set of capabilities to register</param>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> if the call succeeded</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+            </list>
+            </returns>
         </member>
         <member name="M:Fove.Headset.Finalize">
             <summary>
-            Dispose native Headset and destroy the wrapper
+            Destroys the headset, releasing any resources
             </summary>
+            <remarks>
+            Since an error cannot be returned, any error from fove_Headset_destroy will be logged.
+            </remarks>
+            <returns>
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> if the call succeeded</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+            </list>
+            </returns>
         </member>
         <member name="M:Fove.Headset.Dispose">
             <summary>
-            Dispose the native headset
+            Destroys the headset, releasing resources
             </summary>
+            <remarks>
+            After this call, this object will be in an empty state and future calls will fail.
+            This is handled by the destructor, usually the user doesn't need to call this.
+            </remarks>
         </member>
         <member name="M:Fove.Headset.IsHardwareConnected">
             <summary>
             Returns whether a HMD is connected or not
             </summary>
-            <returns>Whether or not a headset is present on the machine, and the call success status</returns>
+            <returns>
+            Is the HMD connected or not, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> if the call succeeded</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+            </list>
+            </returns>
         </member>
         <member name="M:Fove.Headset.IsMotionReady">
             <summary>
-            Returns whether motion tracking hardware (IMU) has started
+            Returns whether motion tracking hardware has started
             </summary>
-            <returns>Whether you can expect valid orientation pose data, and the call success status.</returns>
+            <returns>
+            Is the motion ready or not, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> if the call succeeded</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+            </list>
+            </returns>
         </member>
         <member name="M:Fove.Headset.CheckSoftwareVersions">
             <summary>
@@ -2422,6 +2562,8 @@
             <returns>
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> if this client is compatible with the currently running service</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             <item><see cref="F:Fove.ErrorCode.Connect_RuntimeVersionTooOld"/> if not compatible with the currently running service</item>
             <item>Otherwise returns an error representing why this can't be determined</item>
             </list>
@@ -2433,11 +2575,19 @@
             <para>
             Allows you to get detailed information about the client and runtime versions.
             Instead of comparing software versions directly, you should simply call
-            `CheckSoftwareVersions` to ensure that the client and runtime are compatible.
+            <see cref="M:Fove.Headset.CheckSoftwareVersions"/> to ensure that the client and runtime are compatible.
             This makes a blocking call to the runtime.
             </para>
             </summary>
-            <returns>The current software versions, and the call success status</returns>
+            <returns>
+            Software versions, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> if the call succeeded</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            </list>
+            </returns>
         </member>
         <member name="M:Fove.Headset.QueryLicenses">
              <summary>
@@ -2449,14 +2599,15 @@
              As soon as a license expires or is otherwise deactivated, it will no longer be returned from this.
             
              Usually you do not need to call this function directly.
-             To check if a feature is available, simply use the feature, and see if you get a `License_FeatureAccessDenied` error.
-            
-             In case of error, an empty list is returned.
+             To check if a feature is available, simply use the feature, and see if you get a <see cref="F:Fove.ErrorCode.License_FeatureAccessDenied"/> error.
              </para>
              </summary>
              <returns>
+             A list of licenses, and the call success status:
              <list type="bullet">
              <item><see cref="F:Fove.ErrorCode.None"/> if the call succeeded</item>
+             <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+             <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
              <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
              </list>
              </returns>
@@ -2465,36 +2616,114 @@
             <summary>
             Returns the hardware information
             </summary>
-            <returns>Information about the hardware, and the call success status</returns>
-        </member>
-        <member name="M:Fove.Headset.RegisterCapabilities(Fove.ClientCapabilities)">
-            <summary>
-            Registers a client capability, enabling the required hardware as needed
-            </summary>
             <remarks>
-            Usually you provide the required capabilities at the creation of the headset
-            But you can add and remove capabilities anytime while the object is alive.
+            Allows you to get serial number, manufacturer, and model name of the headset.
             </remarks>
-            <param name="caps">A set of capabilities to register. Registering an existing capability is a no-op</param>
             <returns>
+            A hardware info struct and the call success status:
             <list type="bullet">
-            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.None"/> if the call succeeded</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
-            <item><see cref="F:Fove.ErrorCode.License_FeatureAccessDenied"/> if your license doesn't offer access to this capability</item>
             </list>
             </returns>
+        </member>
+        <member name="M:Fove.Headset.RegisterCapabilities(Fove.ClientCapabilities)">
+             <summary>
+             Registers capabilities needed by this client
+             </summary>
+             <remarks>
+             <para>Usually you provide the required capabilities at the creation of the headset.
+             But you can add and remove capabilities anytime while the object is alive.
+             This is useful if you only have certain sections of your app that require extra capabilities.
+             For example, if your app doesn't use eye tracking all the time, you can disable it temporarily to reduce CPU usage and power consumption.</para>
+             <para>Because this may enable software or hardware components, turn on cameras, etc,
+             it may take up to a few seconds before the associated data is available.
+             In the meantime, typically <see cref="F:Fove.ErrorCode.Data_NoUpdate"/> is returned from related data getters.</para>
+            
+             <para>The service enables/disables software and hardware based on the needs of all connected clients,
+             so it's possible that some other client already has the given capability registered,
+             and thus the associated data may become available very quickly in these cases.</para>
+            
+             <para>This function makes a request to the service and waits for response (with a small timeout).
+             This means it will block the thread temporarily. However, the capability set is recorded locally,
+             so even if the connection to the service fails, no error will be returned. Later, upon the next
+             connection to the server, the capability set will be sent automatically.</para>
+            
+             <para>It is completely safe to register capabilities while the service is down. No error will be returned.</para>
+             </remarks>
+             <param name="caps">A set of capabilities to register. Registering an existing capability is a no-op</param>
+             <returns>
+             <list type="bullet">
+             <item><see cref="F:Fove.ErrorCode.None"/> if the capability has been properly registered locally</item>
+             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if param pointer is null</item>
+             <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+             <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+             </list>
+             </returns>
+        </member>
+        <member name="M:Fove.Headset.RegisterPassiveCapabilities(Fove.ClientCapabilities)">
+             <summary>
+             Registers passive capabilities for this client
+             </summary>
+             <remarks>
+             The difference between active capabilties (those registered with `fove_Headset_registerCapabilities`) is that
+             passive capabilities are not used to enable hardware or software components. There must be at least one active
+             capability registered for the required hardware/software modules to be enabled.
+            
+             However, if another app registers the same capability actively, you can use passive capabilities to read the data
+             being exported from the service on behalf of another client who has registered the capability actively.
+            
+             Basically, this means "if it's on I want it, but I don't want to turn it on myself".
+            
+             Within a single client, there's no point to registering a capability passively if it's already registered actively.
+             However, this is not an error, and the capability will be registered passively. The two lists are kept totally separate.
+             </remarks>
+             <param name="caps">A set of capabilities to register. Registering an existing capability is a no-op</param>
+             <returns>
+             <list type="bullet">
+             <item><see cref="F:Fove.ErrorCode.None"/> if the capability has been properly registered locally</item>
+             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if param pointer is null</item>
+             <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+             <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+             </list>
+             </returns>
         </member>
         <member name="M:Fove.Headset.UnregisterCapabilities(Fove.ClientCapabilities)">
             <summary>
             Unregisters a client capability previously registered
             </summary>
+            <remarks>
+            Removes capabilities previously added by <see cref="T:Fove.Headset"/> or <see cref="M:Fove.Headset.RegisterCapabilities(Fove.ClientCapabilities)"/>.
+            </remarks>
+            See <see cref="M:Fove.Headset.RegisterCapabilities(Fove.ClientCapabilities)"/> for details on registration / unregistration.
             <param name="caps">A set of capabilities to unregister. Unregistering an not-existing capability is a no-op</param>
             <returns>
             <list type="bullet">
-            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.None"/> if the capability has been properly unregistered</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
+        </member>
+        <member name="M:Fove.Headset.UnregisterPassiveCapabilities(Fove.ClientCapabilities)">
+             <summary>
+             Unregisters passive capabilities previously registered by this client
+             </summary>
+             <remarks>
+             Removes passive capabilities previously added by `RegisterPassiveCapabilities`.
+            
+             It has no effect on active capabilities registered with `RegisterCapabilities` or in the Headsed creation.
+             </remarks>
+             <param name="caps">A set of capabilities to unregister. Unregistering an not-existing capability is a no-op</param>
+             <returns>
+             <list type="bullet">
+             <item><see cref="F:Fove.ErrorCode.None"/> if the capability has been properly unregistered</item>
+             <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+             <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+             </list>
+             </returns>
         </member>
         <member name="M:Fove.Headset.WaitForProcessedEyeFrame">
             <summary>
@@ -2507,13 +2736,16 @@
             </para>
             </summary>
             <remarks>
-            Eye tracking should be enabled by registering the `Fove_ClientCapabilities_EyeTracking` before calling this function.
+            Eye tracking should be enabled by registering the <see cref="F:Fove.ClientCapabilities.EyeTracking"/> before calling this function.
             </remarks>
             <returns>
             <list type="bullet">
-            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.None"/> if the call succeeded</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.API_Timeout"/> if the call timed out</item>
             </list>
             </returns>
         </member>
@@ -2547,6 +2779,8 @@
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -2578,6 +2812,9 @@
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+            <item><see cref="F:Fove.ErrorCode.Data_Unreadable"/> if the data is unreadable</item>
             </list>
             </returns>
         </member>
@@ -2597,6 +2834,8 @@
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -2616,6 +2855,8 @@
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -2629,11 +2870,12 @@
             The 3D gaze vector of the specified eye, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -2641,8 +2883,13 @@
             <summary>
             Returns the raw gaze vector of an individual eye
             <para>
-            Returns the eye gaze vector without any final smoothing or compensatory processing.
-            Some processing inherent to the eye tracker logic that can't avoided still happens internally.
+            Returns the rawest gaze vector that the eye tracker provides.
+            An eye tracker is, at it's core, a complex data processing algorithm, so there is no truly "raw" vector.
+            However, any final smoothing is removed to give the most raw data possible.
+            </para>
+            <para>
+            <see cref="M:Fove.Headset.GetGazeVector(Fove.Eye)"/> is recommended for UI control, drawing gaze cursors on screen, and the like.
+            <see cref="M:Fove.Headset.GetGazeVectorRaw(Fove.Eye)"/> is recommended for raw data collection for later data analysis.
             </para>
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
@@ -2656,6 +2903,8 @@
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -2669,7 +2918,10 @@
             </para>
             <para>
             The vectors are normalized in the range [-1, 1] along both X and Y axes such that the
-            following points are true. Center: (0, 0), Bottom-Left: (-1, -1),Top-Right: (1, 1).
+            following points are true. 
+            Center: (0, 0)
+            Bottom-Left: (-1, -1)
+            Top-Right: (1, 1).
             </para>
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
@@ -2678,30 +2930,34 @@
             The 2D screen position of the specified eye gaze, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.GetGazeScreenPositionCombined">
             <summary>
-            Returns the user's 2D gaze position on a virtual screen in front of the user.
+            Returns the user's 2D gaze position
             <para>
-            This is a 2D equivalent of `fove_Headset_getCombinedGazeRay`, and is perhaps the
+            This is a 2D equivalent of <see cref="M:Fove.Headset.GetCombinedGazeRay"/>, and is perhaps the
             simplest gaze estimation function.
             </para>
             <para>
-            It returns an X/Y coordinate of where on the screen the user is looking. While in
-            reality each eye is looking in a different direction at a different [portion of
-            the] screen, they mostly agree, and this function returns effectively an average
-            to get you a simple X/Y value.
+            It returns an X/Y coordinate of where on the screen the user is looking. 
+            </para>
+            <para>While in reality each eye is looking in a different direction at a different [portion of the] screen,
+            they mostly agree, and this function returns effectively an average to get you a simple X/Y value.
             </para>
             <para>
             The vector is normalized in the range [-1, 1] along both X and Y axes such that the
-            following points are true. Center: (0, 0), Bottom-Left: (-1, -1),Top-Right: (1, 1).
+            following points are true. 
+            Center: (0, 0)
+            Bottom-Left: (-1, -1)
+            Top-Right: (1, 1).
             </para>
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
@@ -2709,11 +2965,12 @@
             The 2D screen position of the combined eye gaze, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -2727,11 +2984,12 @@
             The combined gaze ray, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -2744,17 +3002,18 @@
             The depth of the combine Gaze, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.IsUserShiftingAttention">
             <summary>
-            Returns whether the user is shifting its attention between objects or looking at something specific (fixation or pursuit).
+            Returns whether the user is shifting its attention between objects or looking at something specific (fixation or pursuit)
             <para>This can be used to ignore eye data during large eye motions when the user is not looking at anything specific.</para>
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.UserAttentionShift"/> should be registered to use this function.</remarks>
@@ -2767,13 +3026,14 @@
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.GetEyeState(Fove.Eye)">
             <summary>
             Returns the state of an individual eye
-            <para>This can be used to ignore eye data during large eye motions when the user is not looking at anything specific.</para>
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
             <param name="eye">Specify which eye to get the value for</param>
@@ -2786,12 +3046,14 @@
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.IsEyeBlinking(Fove.Eye)">
             <summary>
-            Returns the blinking state of an individual eye
+            Returns whether the user is currently performing a blink for the given eye
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.EyeBlink"/> should be registered to use this function.</remarks>
             <param name="eye">Specify which eye to get the value for</param>
@@ -2804,6 +3066,8 @@
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -2819,11 +3083,12 @@
             The blinking state of the specified eye, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -2835,27 +3100,25 @@
             Whether eye tracking is running, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
-            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.IsEyeTrackingCalibrated">
             <summary>
-            Returns whether eye tracking is calibrated and usable
-            <para>
-            If you are using profiles to save calibration results, the eye tracking system is already calibrated at the launch of the application/service
-            </para>
+            Returns whether eye tracking has been calibrated
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
             <returns>
             Whether the eye tracking system is calibrated, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -2868,15 +3131,16 @@
             Whether the eye tracking system is calibrating, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.IsEyeTrackingCalibratedForGlasses">
             <summary>
-            Returns whether the eye tracking system is currently calibrated for glasses.
+            Returns whether the eye tracking system is currently calibrated for glasses
             <para>
             This basically indicates if the user was wearing glasses during the calibration or not.
             This function returns <see cref="F:Fove.ErrorCode.Data_Uncalibrated"/> if the eye tracking system
@@ -2887,15 +3151,16 @@
             <returns>
             Whether the eye tracking system is calibrated for glasses, and the call success status:
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Uncalibrated"/> if the eye tracking system is currently uncalibrated</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </returns>
         </member>
         <member name="M:Fove.Headset.IsHmdAdjustmentGuiVisible">
             <summary>
-            Returns <c>true</c> when the GUI that asks the user to adjust their headset is being displayed
+            Returns whether or not the GUI that asks the user to adjust their headset is being displayed
             <para>
             It is best practice to pause the gameplay of the application when the HMD adjustment GUI is being displayed.
             </para>
@@ -2905,15 +3170,16 @@
             Whether the Headset position adjustment GUI is visible on the screen, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.HasHmdAdjustmentGuiTimeout">
             <summary>
-            Returns whether or not the GUI that asks the user to adjust their headset was hidden by timeout
+            Returns whether the GUI that asks the user to adjust their headset was hidden by timeout
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
             <returns>
@@ -2923,6 +3189,8 @@
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -2936,27 +3204,29 @@
             Whether the eye tracking system is ready, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.IsUserPresent">
             <summary>
-            Returns <c>true</c> when the user is wearing the headset
-            <para>When user is not present Eye tracking values shouldn't be used as invalid.</para>
+            Returns whether the user is wearing the headset or not
+            <para>When user is not present Eye tracking values shouldn't be used, as invalid.</para>
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.UserPresence"/> should be registered to use this function.</remarks>
             <returns>
             Whether the user is wearing the headset, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -2964,8 +3234,8 @@
             <summary>
             Returns the eyes camera image
             <para>
-            The eyes image is synchronized with and fetched at the same as the gaze
-            during the call to <see cref="M:Fove.Headset.FetchEyeTrackingData"/>.
+            Returns the most recent eye tracking camera image cached in the last call to <see cref="M:Fove.Headset.FetchEyeTrackingData"/>.
+            The image data buffer is invalidated upon the next call to <see cref="M:Fove.Headset.FetchEyeTrackingData"/>.
             </para>
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.EyesImage"/> should be registered to use this function.</remarks>
@@ -2973,10 +3243,11 @@
             The Eye camera image, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreadable"/> if the data couldn't be read properly from memory</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -2989,11 +3260,12 @@
             The user IPD value, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3006,11 +3278,12 @@
             The user IOD value, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3024,11 +3297,12 @@
             The pupil radius of the specified eye, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3042,11 +3316,12 @@
             The iris radius of the specified eye, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3060,11 +3335,12 @@
             The eyeball radius of the specified eye, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3078,17 +3354,19 @@
             The torsion angle of the specified eye, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.License_FeatureAccessDenied"/> if the current license is not sufficient for this feature</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.GetEyeShape(Fove.Eye)">
             <summary>
-            Returns the outline shape of the specified user eye in the Eyes camera image.
+            Returns the outline shape of the specified user eye in the Eyes camera image
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.EyeShape"/> should be registered to use this function.</remarks>
             <param name="eye">Specify which eye to get the value for</param>
@@ -3096,17 +3374,19 @@
             The shape of the specified eye, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.License_FeatureAccessDenied"/> if the current license is not sufficient for this feature</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.GetPupilShape(Fove.Eye)">
             <summary>
-            Returns the shape of the pupil of the specified user eye in the Eyes camera image.
+            Returns the pupil shape of the specified user eye in the Eyes camera image
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.PupilShape"/> should be registered to use this function.</remarks>
             <param name="eye">Specify which eye to get the value for</param>
@@ -3114,17 +3394,19 @@
             The shape of the pupil of the specified eye, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.License_FeatureAccessDenied"/> if the current license is not sufficient for this feature</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.StartHmdAdjustmentProcess(System.Boolean)">
             <summary>
-            Start the HMD adjustment process. Doing this will display the HMD adjustment GUI.
+            Start the HMD adjustment process. Doing this will display the HMD adjustment GUI
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
             <param name="lazy">If true, the headset adjustment GUI doesn't show if the headset position is already perfect.</param>
@@ -3134,6 +3416,8 @@
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3164,6 +3448,8 @@
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.License_FeatureAccessDenied"/> if you don't have the license level required to access this feature</item>
             <item><see cref="F:Fove.ErrorCode.Render_OtherRendererPrioritized"/> if another process has currently the priority for rendering the process</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3195,6 +3481,8 @@
             <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3207,15 +3495,16 @@
             The eye tracking system calibration state, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.GetEyeTrackingCalibrationStateDetails">
             <summary>
-            Get the detailed information about the state of the currently running calibration process.
+            Get the detailed information about the state of the currently running calibration process
             <para>
             When the calibration process is not running, this returns the final state of the previously run calibration process.
             Value is undefined if no calibration process has begun since the service was started.
@@ -3228,12 +3517,15 @@
             <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.TickEyeTrackingCalibration(System.Single,System.Boolean)">
             <summary>
-            Tick the current calibration process and retrieve data information to render the current calibration state.
+            Tick the current calibration process and retrieve data information to render the current calibration state
             <para>
             This function is how the client declares to the calibration system that is available to render calibration.
             The calibration system determines which of the available renderers has the highest priority,
@@ -3241,7 +3533,7 @@
             Even while ticking this, you may get no result because either no calibration is running,
             or a calibration is running but some other higher priority renderer is doing the rendering.
             </para>
-            <para>It is perfectly fine not to call this function, in which case the Fove service will automatically render the calibration process for you.</para>
+            <para>Note that it is perfectly fine not to call this function, in which case the Fove service will automatically render the calibration process for you.</para>
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.EyeTracking"/> should be registered to use this function.</remarks>
             <param name="deltaTime">The time elapsed since the last rendered frame</param>
@@ -3257,12 +3549,14 @@
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Render_OtherRendererPrioritized"/> if another process has currently the priority for rendering calibration process</item>
             <item><see cref="F:Fove.ErrorCode.License_FeatureAccessDenied"/> if you don't have the license level required to access this feature</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.GetGazedObjectId">
             <summary>
-            Get the id of the object gazed by the user.
+            Get the id of the object gazed by the user
             <para>
             In order to be detected an object first need to be registered using the <see cref="M:Fove.Headset.RegisterGazableObject(Fove.GazableObject)"/> function.
             If the user is currently not looking at any specific object the <see cref="F:Fove.GazableObject.IdInvalid"/> value is returned.
@@ -3279,6 +3573,8 @@
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3290,46 +3586,48 @@
             We recommend that clients opt-in to this functionality rather than doing it themselves, as our algorithm may improve over time.
             Clients of course may do their own detection if they have special needs, such as performance needs, or just want to use their own algorithm.
             </para>
+            <para> Use <see cref="M:Fove.Headset.RegisterCameraObject(Fove.CameraObject)"/> to set the pose of the corresponding camera in the 3D world.</para>
             </summary>
-            <remarks>Connection to the service is not required for object registration, thus you can register your world objects at will and not worry about connection or reconnection status</remarks>
+            <remarks>Connection to the service is not required for object registration, thus you can register your world objects at will and not worry about connection or reconnection status.</remarks>
             <param name="obj">A description of the object in the 3D world. Data is copied and no reference is kept to this memory after return</param>
-            <seealso cref="M:Fove.Headset.UpdateGazableObject(System.Int32,Fove.ObjectPose@)"/>
-            <seealso cref="M:Fove.Headset.RemoveGazableObject(System.Int32)"/>
             <returns>
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
-            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the object is invalid in any way (such as an invalid object id).</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the object is invalid in any way (such as an invalid object id)</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             <item><see cref="F:Fove.ErrorCode.Object_AlreadyRegistered"/> if an object with same id is already registered</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.UpdateGazableObject(System.Int32,Fove.ObjectPose@)">
             <summary>
-            Update the pose of a previously registered gazable object
+            Update a previously registered 3D object pose
             </summary>
-            <param name="objectId">Id of the object passed to <see cref="M:Fove.Headset.RegisterGazableObject(Fove.GazableObject)"/>()</param>
-            <param name="pose">the updated pose of the object</param>/// <seealso cref="M:Fove.Headset.RegisterCameraObject(Fove.CameraObject)"/>
+            <param name="objectId">Id of the object passed to <see cref="M:Fove.Headset.RegisterGazableObject(Fove.GazableObject)"/></param>
+            <param name="pose">the updated pose of the object</param>
             <seealso cref="M:Fove.Headset.RegisterGazableObject(Fove.GazableObject)"/>
             <seealso cref="M:Fove.Headset.RemoveGazableObject(System.Int32)"/>
             <returns>
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
             <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the object was not registered</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.RemoveGazableObject(System.Int32)">
             <summary>
-            Removes a previously registered 3D object from the scene.
+            Removes a previously registered 3D object from the scene
             </summary>
             <remarks>Because of the asynchronous nature of the FOVE system, this object may still be referenced in future frames for a very short period of time.</remarks>
-            <param name="objectId">Id of the object passed to <see cref="M:Fove.Headset.RegisterGazableObject(Fove.GazableObject)"/>()</param>
+            <param name="objectId">Id of the object passed to <see cref="M:Fove.Headset.RegisterGazableObject(Fove.GazableObject)"/></param>
             <seealso cref="M:Fove.Headset.RegisterGazableObject(Fove.GazableObject)"/>
             <seealso cref="M:Fove.Headset.UpdateGazableObject(System.Int32,Fove.ObjectPose@)"/>
             <returns>
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
             <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the object was not registered</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3353,6 +3651,7 @@
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
             <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the object is invalid in any way (such as an invalid object id).</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             <item><see cref="F:Fove.ErrorCode.Object_AlreadyRegistered"/> if an object with same id is already registered.</item>
             </list>
             </returns>
@@ -3369,6 +3668,7 @@
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
             <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the object was not already registered</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
             <seealso cref="M:Fove.Headset.RegisterCameraObject(Fove.CameraObject)"/>
@@ -3376,13 +3676,14 @@
         </member>
         <member name="M:Fove.Headset.RemoveCameraObject(System.Int32)">
             <summary>
-            Removes a previously registered camera from the scene.
+            Removes a previously registered camera from the scene
             </summary>
             <param name="cameraId">Id of the camera passed to <see cref="M:Fove.Headset.RegisterCameraObject(Fove.CameraObject)"/></param>
             <returns>
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success.</item>
             <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the object was not already registered</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
             <seealso cref="M:Fove.Headset.RegisterCameraObject(Fove.CameraObject)"/>
@@ -3398,21 +3699,24 @@
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.IsPositionReady">
             <summary>
-            Returns whether position tracking hardware has started
+            Returns  whether position tracking hardware has started and is successful
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.PositionTracking"/> should be registered to use this function.</remarks>
             <returns>
             Whether the position tracking headset is ready, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3426,39 +3730,39 @@
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.FetchPoseData">
-             <summary>
-             Fetch the latest pose data, and cache it locally
-             <para>
-             This function caches the headset pose for later retrieval by <see cref="M:Fove.Headset.GetPose"/>.
-             </para>
-             <para>
-             This function never blocks the thread. If no new data is available, no operation is performed.
-             The timestamp can be used to know if the data has been updated or not.
-             </para>
-             <para>
-             The HMD pose is updated at much higher frame rate than the eye tracking data and there is no equivalent to
-             <see cref="M:Fove.Headset.WaitForProcessedEyeFrame"/> for the pose. For rendering purposes you should use the pose returned by
-             <see cref="M:Fove.Compositor.WaitForRenderPose"/> which provides the best render pose estimate for the current frame.
-             For other purposes, just fetch the HMD pose once at the beginning of your update loop. This will ensure consistent data
-             throughout all your update loop code.
-             </para>
-             </summary>
-             <remarks>
-             At least one of the following capabilities need to be registered to use this function:
-             <see cref="F:Fove.ClientCapabilities.PositionTracking"/>, <see cref="F:Fove.ClientCapabilities.OrientationTracking"/>
-            </remarks>
-             <returns>
-             The latest pose frame timestamp, and the call success status:
-             <list type="bullet">
-             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
-             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
-             </list>
-             </returns>
+            <summary>
+            Fetch the latest pose data, and cache it locally
+            <para>
+            This function caches the headset pose for later retrieval by <see cref="M:Fove.Headset.GetPose"/>.
+            </para>
+            <para>
+            This function never blocks the thread. If no new data is available, no operation is performed.
+            The timestamp can be used to know if the data has been updated or not.
+            </para>
+            <para>
+            The HMD pose is updated at much higher frame rate than the eye tracking data and there is no equivalent to
+            <see cref="M:Fove.Headset.WaitForProcessedEyeFrame"/> for the pose. For rendering purposes you should use the pose returned by
+            <see cref="M:Fove.Compositor.WaitForRenderPose"/> which provides the best render pose estimate for the current frame.
+            For other purposes, just fetch the HMD pose once at the beginning of your update loop. This will ensure consistent data
+            throughout all your update loop code.
+            </para>
+            </summary>
+            <returns>
+            The latest pose frame timestamp, and the call success status:
+            <list type="bullet">
+            <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
+            <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+            </list>
+            </returns>
         </member>
         <member name="M:Fove.Headset.FetchPositionImage">
              <summary>
@@ -3485,6 +3789,8 @@
              <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
              <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
              <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
+             <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+             <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
              </list>
              </returns>
         </member>
@@ -3501,6 +3807,8 @@
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if neither <see cref="F:Fove.ClientCapabilities.PositionTracking"/> nor <see cref="F:Fove.ClientCapabilities.OrientationTracking"/> has been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3508,7 +3816,7 @@
             <summary>
             Return the frame timestamp of the cached pose data
             <para>
-            Basically returns the timestamp returned by the last call to  <see cref="M:Fove.Headset.FetchPoseData"/>.
+            Basically returns the timestamp returned by the last call to  <see cref="M:Fove.Headset.FetchPositionImage"/>.
             </para>
             </summary>
             <returns>
@@ -3517,6 +3825,8 @@
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if not connected to the service or if the service hasn't written any data out yet</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if <see cref="F:Fove.ClientCapabilities.PositionImage"/> hasn't been registered prior to this call</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3533,6 +3843,8 @@
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreliable"/> if the returned data is too unreliable to be used</item>
             <item><see cref="F:Fove.ErrorCode.Data_LowAccuracy"/> if the returned data is of low accuracy</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3540,8 +3852,7 @@
             <summary>
             Returns the position camera image
             <para>
-            The position image is synchronized with and fetched at the same as the pose
-            during the call to <see cref="M:Fove.Headset.FetchPoseData"/>.
+            Returns the most recent position tracking image cached in the last call to <see cref="M:Fove.Headset.FetchPoseData"/>.
             </para>
             </summary>
             <remarks><see cref="F:Fove.ClientCapabilities.PositionImage"/> should be registered to use this function.</remarks>
@@ -3549,10 +3860,11 @@
             The position camera image, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.API_NotRegistered"/> if the required capability has not been registered prior to this call</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
             <item><see cref="F:Fove.ErrorCode.Data_Unreadable"/> if the data couldn't be read properly from memory</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3560,14 +3872,18 @@
             <summary>
             Returns the values of passed-in left-handed 4x4 projection matrices
             </summary>
+            <para>
+            Writes 4x4 projection matrices for both eyes using near and far planes in a left-handed coordinate system.
+            </para>
             <param name="zNear">The near plane in float, Range: from 0 to zFar</param>
             <param name="zFar">The far plane in float, Range: from zNear to infinity</param>
             <returns>
             The 4x4 projection left and right matrices (left-handed), and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3575,14 +3891,18 @@
             <summary>
             Returns the values of passed-in right-handed 4x4 projection matrices
             </summary>
+            <para>
+            Writes 4x4 projection matrices for both eyes using near and far planes in a right-handed coordinate system.
+            </para>
             <param name="zNear">The near plane in float, Range: from 0 to zFar</param>
             <param name="zFar">The far plane in float, Range: from zNear to infinity</param>
             <returns>
             The left and right 4x4 projection matrices (right-handed), and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3590,13 +3910,15 @@
             <summary>
             Returns values for the view frustum of the specified eye at 1 unit away
             </summary>
-            <remarks>Please multiply them by zNear to convert to your correct frustum near-plane</remarks>
+            <remarks>Please multiply them by zNear to convert to your correct frustum near-plane.</remarks>
             <returns>
             The left and right camera projection parameters, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3604,13 +3926,15 @@
             <summary>
             Returns the matrices to convert from eye to head space coordinates
             </summary>
-            <remarks>This is simply a translation matrix that returns +/- IOD/2</remarks>
+            <remarks>This is simply a translation matrix that returns +/- IOD/2.
+            </remarks>
             <returns>
             The matrix describing left and right eye and right transforms data, and the call success status:
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
-            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3618,10 +3942,9 @@
             <summary>
             Interocular distance to use for rendering in meters
             <para>
-            This is an estimation of the distance between centers of the left and right eyeballs.
-            Half of the IOD can be used to displace the left and right cameras for stereoscopic rendering.
+            This may or may not reflect the actual IOD of the user (see getUserIOD),
+            but is the value used by the rendering system for the distance to split the left/right cameras for stereoscopic rendering.
             We recommend calling this each frame when doing stereoscopic rendering.
-            Future versions of the FOVE service may update the IOD during runtime as needed.
             </para>
             </summary>
             <returns>
@@ -3630,6 +3953,8 @@
             <item><see cref="F:Fove.ErrorCode.None"/> on success</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.Data_NoUpdate"/> if the capability is registered but no valid data has been returned by the service yet</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
@@ -3651,6 +3976,8 @@
             <item><see cref="F:Fove.ErrorCode.Profile_InvalidName"/> if newName was invalid</item>
             <item><see cref="F:Fove.ErrorCode.Profile_NotAvailable"/> if the name is already taken</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if newName is null</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
             <seealso cref="M:Fove.Headset.RenameProfile(System.String,System.String)"/>
@@ -3662,10 +3989,10 @@
         </member>
         <member name="M:Fove.Headset.RenameProfile(System.String,System.String)">
             <summary>
-            Renames an existing profile. This works on the current profile as well.
+            Renames an existing profile. This works on the current profile as well
             </summary>
-            <param name="newName">name of the profile to be renamed</param>
-            <param name="oldName">unique new name of the profile</param>
+            <param name="newName">The name of the profile to be renamed</param>
+            <param name="oldName">Unique new name of the profile</param>
             <returns>
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/>if the profile was successfully renamed</item>
@@ -3674,6 +4001,7 @@
             <item><see cref="F:Fove.ErrorCode.Profile_NotAvailable"/> if the name is already taken</item>
             <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the old name and new name are the same</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if oldName or newName is null</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
             <seealso cref="M:Fove.Headset.CreateProfile(System.String)"/>
@@ -3685,19 +4013,21 @@
         </member>
         <member name="M:Fove.Headset.DeleteProfile(System.String)">
             <summary>
-            Deletes an existing profile. This works on the current profile as well.
+            Deletes an existing profile
             <para>
             If the deleted profile is the current profile, then no current profile is set after this returns.
             In such a case, it is undefined whether any existing profile data loaded into memory may be kept around.
             </para>
             </summary>
-            <param name="profileName">name of the profile to be deleted</param>
+            <param name="profileName">The name of the profile to be deleted</param>
             <returns>
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/>if the profile was successfully deleted</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.Profile_DoesntExist"/> if the requested profile at profileName doesn't exist</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if profileName is null</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
             <seealso cref="M:Fove.Headset.CreateProfile(System.String)"/>
@@ -3716,6 +4046,8 @@
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/>if the profile list was successfully filled</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
             <seealso cref="M:Fove.Headset.CreateProfile(System.String)"/>
@@ -3742,7 +4074,8 @@
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.Profile_DoesntExist"/> if there is no such profile</item>
             <item><see cref="F:Fove.ErrorCode.Profile_NotAvailable"/> if the requested profile is the current profile</item>
-            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the old name and new name are the same</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if profileName is null</item>
             </list>
             </returns>
@@ -3762,6 +4095,8 @@
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/> if the profile name was successfully get</item>
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
             <seealso cref="M:Fove.Headset.CreateProfile(System.String)"/>
@@ -3781,8 +4116,6 @@
             third party applications are encouraged to use their own separate data store keyed by profile name.
             They will need to test for profile name changes and deletions manually in that case.</para>
             </summary>
-            <remarks>Please note that no-ops are OK but you should check for <see cref="F:Fove.ErrorCode.Profile_NotAvailable"/>.
-            </remarks>
             <param name="profileName">The name of the profile to be queried, or an empty string if no profile is set</param>
             <returns>
             The data path associated to the provided profile, and the call success status:
@@ -3792,6 +4125,8 @@
             <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             <item><see cref="F:Fove.ErrorCode.Profile_NotAvailable"/> if the requested profile is the current profile</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if profileName is null</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
             <seealso cref="M:Fove.Headset.CreateProfile(System.String)"/>
@@ -3803,39 +4138,76 @@
         </member>
         <member name="M:Fove.Headset.HasAccessToFeature(System.String)">
             <summary>
-            Returns whether the Headset has access to the given feature.
+            Returns whether the Headset has access to the given feature
             </summary>
             <remarks>If the provided feature name doesn't exist, then <c>false</c> and <see cref="F:Fove.ErrorCode.None"/> are returned.</remarks>
-            <param name="featureName">The name of the headset feature to query</param>
+            <param name="featureName">The name of the feature to query</param>
             <returns>
             <list type="bullet">
             <item><c>True</c> if the headset can access the given feature, otherwise <c>false</c></item>
             <item><see cref="F:Fove.ErrorCode.None"/>if the call succeeded</item>
             <item><see cref="F:Fove.ErrorCode.API_NullInPointer"/> if featureName is null</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the headset object is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.ActivateLicense(System.String)">
             <summary>
-            Returns whether the license is activated successfully.
+            Activates a license
+            <para> A license must be activated before using most features of the FOVE system.</para>
+            <para> Since FOVE provides default means (GUI/CLI) to activate licenses, this is not strictly required for most applications.</para>
+            <para>
+            However, this function provides a programmatic means for the application to handle license key entry itself.
+            An application may fully script license activation, so that the end user doesn't need to enter anything,
+            or the application may display a prompt the user in it's own GUI to enter a license key, depending on the use case.
+            </para>
+            <para> Once a license is activated it is persisted to disk, so this does not need to be called repeatedly.</para>
+            <para> 
+            If there is an existing license, it will be deactivated automatically.
+            Currently only one license at a time is supported, but this may change in the future.
+            </para>
+            <para> If the license has a PC limit, this will take one slot within that limit.</para>
+            <para>
+            Because this makes a remote server call, this function will sometimes block a little while.
+            It is not recommended to call this from your GUI thread, or other realtime threads.
+            </para>
             </summary>
-            <param name="licenseKey">The license key used for activation</param>
+            <remarks>Activating a license multiple times from the same machine is a no-op, and will return <see cref="F:Fove.ErrorCode.API_AlreadyInTheDesiredState"/>.</remarks>
+            <param name="licenseKey">Full text of the license key to be activated</param>
             <returns>
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/>if the activation succeeded</item>
-            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if the activation failed</item>
+            <item><see cref="F:Fove.ErrorCode.API_AlreadyInTheDesiredState"/>if the license was already activated</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the license key was invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+            <item><see cref="F:Fove.ErrorCode.API_Timeout"/> if the call is not completed within a period of time</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
+            <item><see cref="F:Fove.ErrorCode.License_Expired"/> if the license was already expired</item>
+            <item><see cref="F:Fove.ErrorCode.License_ClockError"/> if the local clock is invalid</item>
+            <item><see cref="F:Fove.ErrorCode.License_TooManyActivations"/> if the license has been activated too many times</item>
             </list>
             </returns>
         </member>
         <member name="M:Fove.Headset.DeactivateLicense(System.String)">
             <summary>
-            Returns whether the license is deactivated successfully.
+            Deactivates a previously activated license
+            <para>Due to caching, features of the license may become unavailable shortly after this call, not necessarily immediately.</para>
+            <para>If the license has a PC limit, this PC will no longer count against it.</para>
+            <para>
+            Because this makes a remote server call, this function will sometimes block a little while.
+            It is not recommended to call this from your GUI thread, or other realtime threads.
+            </para>
             </summary>
-            <param name="licenseData">The license information used for deactivation, can be empty or a guid or a license key</param>
+            <param name="licenseData">A GUID of license to be deactivated, or the full text of a license key to be deactivated, or an empty string if all licenses need to be deactivated.</param>
             <returns>
             <list type="bullet">
             <item><see cref="F:Fove.ErrorCode.None"/>if the deactivation succeeded</item>
-            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if the deactivation failed</item>
+            <item><see cref="F:Fove.ErrorCode.API_AlreadyInTheDesiredState"/> if no license has been deactivated during the operation</item>
+            <item><see cref="F:Fove.ErrorCode.API_InvalidArgument"/> if the license data was invalid</item>
+            <item><see cref="F:Fove.ErrorCode.UnknownError"/> if an unexpected internal error occurred</item>
+            <item><see cref="F:Fove.ErrorCode.API_Timeout"/> if the call is not completed within a period of time</item>
+            <item><see cref="F:Fove.ErrorCode.Connect_NotConnected"/> if not connected to the service</item>
             </list>
             </returns>
         </member>
@@ -3851,6 +4223,131 @@
             <returns>The compositor instance</returns>
             <seealso cref="M:Fove.Compositor.Dispose"/>
             <exception cref="T:System.ApplicationException">When the creation of compositor failed</exception>
+        </member>
+        <member name="T:Fove.MonoPInvokeCallbackAttribute">
+            <summary>
+            Used to support the callback mechanism in Unity IL2CPP build
+            </summary>
+        </member>
+        <member name="M:Fove.MonoPInvokeCallbackAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Fove.MonoPInvokeCallbackAttribute"/> class.
+            </summary>
+        </member>
+        <member name="M:Fove.MonoPInvokeCallbackAttribute.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Fove.MonoPInvokeCallbackAttribute"/> class with the specified type.
+            </summary>
+            <param name="t">The type of the callback.</param>
+        </member>
+        <member name="T:Fove.NativeUtils">
+            <summary>
+            Provides utility methods for handling native UTF-8 encoded strings and interacting with unmanaged memory.
+            </summary>
+        </member>
+        <member name="T:Fove.NativeUtils.CallbackDelegate">
+            <summary>
+            Delegate for callback functions.
+            </summary>
+            <param name="dataPtr">Pointer to the data.</param>
+            <param name="userData">Pointer to user data.</param>
+        </member>
+        <member name="T:Fove.NativeUtils.NativeCalibrationData">
+            <summary>
+            Represents native calibration data.
+            </summary>
+        </member>
+        <member name="F:Fove.NativeUtils.NativeCalibrationData.method">
+            <summary>
+            The calibration method.
+            </summary>
+        </member>
+        <member name="F:Fove.NativeUtils.NativeCalibrationData.state">
+            <summary>
+            The calibration state.
+            </summary>
+        </member>
+        <member name="F:Fove.NativeUtils.NativeCalibrationData.stateInfo">
+            <summary>
+            Pointer to state information.
+            </summary>
+        </member>
+        <member name="F:Fove.NativeUtils.NativeCalibrationData.targetL">
+            <summary>
+            The left calibration target.
+            </summary>
+        </member>
+        <member name="F:Fove.NativeUtils.NativeCalibrationData.targetR">
+            <summary>
+            The right calibration target.
+            </summary>
+        </member>
+        <member name="M:Fove.NativeUtils.NativeCalibrationData.GetCalibrationData">
+            <summary>
+            Converts the native calibration data to the C# calibration data struct.
+            </summary>
+            <returns>The managed calibration data.</returns>
+        </member>
+        <member name="M:Fove.NativeUtils.GetStringFromNativeUtf8Ptr(System.IntPtr)">
+            <summary>
+            Converts a native UTF-8 encoded string from an unmanaged memory pointer to a managed C# string.
+            </summary>
+            <param name="utf8Ptr">Pointer to the unmanaged UTF-8 encoded string.</param>
+            <returns>A managed C# string containing the converted UTF-8 data.</returns>
+        </member>
+        <member name="M:Fove.NativeUtils.GetNativeUtf8Array(System.String)">
+            <summary>
+            Converts a string to a UTF-8 encoded byte array and appends a null character at the end.
+            </summary>
+            <param name="str">The string to be converted.</param>
+            <returns>A UTF-8 encoded byte array with a null character at the end.</returns>
+        </member>
+        <member name="M:Fove.NativeUtils.GetCharPtr(System.String,System.Func{System.IntPtr,Fove.ErrorCode})">
+            <summary>
+            Converts a string to a UTF-8 encoded byte array and passes its pointer to the specified function.
+            </summary>
+            <param name="str">The string to be converted.</param>
+            <param name="queryfunc">The function that receives the pointer.</param>
+            <returns>ErrorCode - The result of the function execution.</returns>
+        </member>
+        <member name="M:Fove.NativeUtils.GetCharPtrs(System.String,System.String,System.Func{System.IntPtr,System.IntPtr,Fove.ErrorCode})">
+            <summary>
+            Converts two strings to UTF-8 encoded byte arrays and passes their pointers to the specified function.
+            </summary>
+            <param name="str1">The first string to be converted.</param>
+            <param name="str2">The second string to be converted.</param>
+            <param name="queryfunc">The function that receives the pointers.</param>
+            <returns>ErrorCode indicating the result of the function execution.</returns>
+        </member>
+        <member name="M:Fove.NativeUtils.GetStringFromCallback(System.String@,System.Func{System.IntPtr,System.IntPtr,Fove.ErrorCode})">
+            <summary>
+            Executes a callback function to retrieve a string value.
+            </summary>
+            <param name="outStr">The output string that will be set by the callback.</param>
+            <param name="queryfunc">The function that takes a callback pointer and context pointer, and returns an ErrorCode.</param>
+            <returns>
+            Returns an ErrorCode indicating the success or failure of the operation.
+            </returns>
+        </member>
+        <member name="M:Fove.NativeUtils.GetStringsFromCallback(System.Collections.Generic.List{System.String}@,System.Func{System.IntPtr,System.IntPtr,Fove.ErrorCode})">
+            <summary>
+            Executes a callback function to retrieve strings and stores them in the provided list.
+            </summary>
+            <param name="outStrs">A reference to the list where the retrieved strings will be stored.</param>
+            <param name="queryfunc">The callback function that will be executed to retrieve the strings.</param>
+            <returns>
+            An ErrorCode indicating the success or failure of the operation.
+            </returns>
+        </member>
+        <member name="M:Fove.NativeUtils.GetCalibrationDataFromCallback(Fove.CalibrationData@,System.Func{System.IntPtr,System.IntPtr,Fove.ErrorCode})">
+            <summary>
+            Retrieves calibration data using a callback function.
+            </summary>
+            <param name="outData">Reference to the output CalibrationData object.</param>
+            <param name="queryfunc">Function to query the calibration data, taking a callback pointer and context pointer as parameters.</param>
+            <returns>
+            Returns an ErrorCode indicating the success or failure of the operation.
+            </returns>
         </member>
     </members>
 </doc>

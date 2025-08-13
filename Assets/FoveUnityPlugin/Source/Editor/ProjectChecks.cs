@@ -293,6 +293,10 @@ namespace Fove.Unity
             foreach (string sceneGuid in sceneGuids)
             {
                 string scenePath = AssetDatabase.GUIDToAssetPath(sceneGuid);
+                if (scenePath.StartsWith("Packages/"))
+                {
+                    continue;
+                }
                 Scene scene = SceneManager.GetSceneByPath(scenePath);
                 var shouldLoadUnloadScene = !scene.isLoaded;
 

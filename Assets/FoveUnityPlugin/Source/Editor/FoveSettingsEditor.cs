@@ -317,7 +317,10 @@ namespace Fove.Unity
                         switch (m_selectedTab)
                         {
                             case 0:
-                                DrawFixSuggestions(serialized);
+                                if (!EditorApplication.isPlaying)
+                                    DrawFixSuggestions(serialized);
+                                else
+                                    SetHelpMessage("The Fixes cannot be performed when the Editor is playing.");
                                 break;
                             case 1:
                                 DrawSettings(serialized);
